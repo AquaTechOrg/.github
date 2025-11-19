@@ -4,5 +4,5 @@ contact_links:
     url: "https://github.com/orgs/AquaTechOrg/discussions"
     about: "לשאלות ושיחות כלליות על הפרויקטים בארגון"
   - name: "דיווח אבטחה"
-    url: "mailto:security@aquatech.example.com"
-    about: "שלחו פרטי פגיעות באופן פרטי"
+    url: "https://aquatech.example.com/security"
+    about: "שלחו פרטי פגיעות באופן פרטי (הטופס מאובטח)"
