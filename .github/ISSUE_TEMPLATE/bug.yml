@@ -1,6 +1,6 @@
 name: "Bug 🐛"
 description: "טופס פשוט לדיווח על תקלה או בעיה במערכת"
-type: ["Bug 🐛"]
+type: "Bug 🐛"
 
 body:
   - type: textarea
