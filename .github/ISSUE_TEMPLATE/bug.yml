@@ -1,10 +1,9 @@
-name: "🐞 דיווח על בעיה"
+name: "Bug 🐛"
 description: "טופס פשוט לדיווח על תקלה או בעיה במערכת"
-title: "[תקלה]: "
-labels: ["bug"]
+type: ["Bug 🐛"]
 
 body:
-  - type: input
+  - type: textarea
     id: summary
     attributes:
       label: "מה הבעיה?"
@@ -28,18 +27,11 @@ body:
     validations:
       required: false
 
-  - type: dropdown
-    id: severity
-    attributes:
-      label: "עד כמה הבעיה חמורה?"
-      options:
-        - "נמוך"
-        - "בינוני"
-        - "גבוה"
-      default: 1
 
   - type: textarea
     id: screenshots
     attributes:
       label: "צילומי מסך"
-      description: "לא חובה – אפשר לצרף כדי להבין טוב יותר"
+      description: "לא חובה - אפשר לצרף כדי להבין טוב יותר"
+    validations:
+      required: false
