@@ -14,7 +14,7 @@ body:
   - type: textarea
     id: steps
     attributes:
-      label: "מה עשית לפני שהבעיה הופיעה?"
+      label: "מה עשיתי כדי לגרום לבעיה לקרות?"
       placeholder: "לדוגמה: נכנסתי לעמוד הפרופיל ולחצתי על שמירה"
     validations:
       required: true

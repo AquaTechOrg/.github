@@ -1,0 +1,31 @@
+name: "Tech Debt ⚙️"
+description: "טופס לתיעוד, מעקב וטיפול בחוב טכני במערכת"
+labels: "Tech Debt ⚙️"
+
+body:
+  - type: textarea
+    id: debt_description
+    attributes:
+      label: "תיאור החוב הטכני"
+      description: "תאר את החוב הטכני, היכן הוא נמצא בקוד, ומדוע הוא נוצר."
+      placeholder: "לדוגמה: שימוש בספרייה מיושנת, קוד משוכפל, חוסר בבדיקות יחידה..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: "השפעה וסיכונים"
+      description: "מהי ההשפעה של השארת החוב כפי שהוא? (לדוגמה: האטה בפיתוח, סיכון לבאגים, קושי בתחזוקה)"
+      placeholder: "כל שינוי באזור הזה לוקח פי 2 יותר זמן, יש סיכון גבוה לרגרסיה..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: "פתרון מוצע"
+      description: "תאר את הדרך המומלצת לטפל בחוב הטכני."
+      placeholder: "לדוגמה: לבצע Refactor לקומפוננטה X, לשדרג את ספרייה Y, לכתוב בדיקות..."
+    validations:
+      required: true

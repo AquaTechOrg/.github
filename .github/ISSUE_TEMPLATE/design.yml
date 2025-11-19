@@ -1,0 +1,13 @@
+name: "Design 🎨"
+description: "טופס למשימות עיצוב ותכנון"
+type: "Design 🎨"
+
+body:
+  - type: textarea
+    id: design_goal
+    attributes:
+      label: "מטרת העיצוב"
+      description: "מה המטרה העיקרית של משימת העיצוב הזו? מה הבעיה שאנחנו מנסים לפתור?"
+      placeholder: "לדוגמה: עיצוב דף נחיתה חדש, שיפור חווית המשתמש בתהליך ההרשמה..."
+    validations:
+      required: true

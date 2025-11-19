@@ -1,0 +1,13 @@
+name: "Training 📚"
+description: "טופס לתכנון והכנה של הדרכה, סדנה, או מפגש ידע"
+type: "Training 📚"
+
+body:
+  - type: textarea
+    id: training_topic
+    attributes:
+      label: "נושא ההדרכה"
+      description: "מהו הנושא המרכזי של ההדרכה?"
+      placeholder: "לדוגמה: שימוש ב-GitHub Actions, עקרונות SOLID, היכרות עם המערכת החדשה"
+    validations:
+      required: true

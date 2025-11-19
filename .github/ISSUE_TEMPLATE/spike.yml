@@ -1,0 +1,40 @@
+name: "Spike 💡"
+description: "טופס לחקר טכנולוגי, בדיקת היתכנות, או ניתוח פתרונות"
+type: "Spike 💡"
+
+body:
+  - type: textarea
+    id: spike_question
+    attributes:
+      label: "השאלה המרכזית"
+      description: "מהי השאלה העיקרית שהספייק הזה בא לענות עליה?"
+      placeholder: "לדוגמה: מהי הדרך הטובה ביותר ליישם חיפוש בזמן אמת? האם כדאי להשתמש בספרייה X או Y?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: investigation_plan
+    attributes:
+      label: "תוכנית החקר"
+      description: "מהם השלבים או הנושאים שיש לחקור כדי לענות על השאלה?"
+      placeholder: |
+        - מחקר על ספריות A, B, C.
+        - בניית Proof of Concept (POC) קטן עם הפתרון המועדף.
+        - סיכום יתרונות וחסרונות של כל גישה.
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: "תוצאה רצויה"
+      description: "מה התוצר הסופי של הספייק? מה יעזור לנו לקבל החלטה?"
+      placeholder: "לדוגמה: מסמך סיכום עם המלצה מנומקת, דוגמת קוד עובדת, דיאגרמת ארכיטקטורה."
+    validations:
+      required: true
+
+  - type: textarea
+    id: findings
+    attributes:
+      label: "ממצאים (ימולא בסיום)"
+      description: "בסיום הספייק, יש לסכם כאן את הממצאים, המסקנות, וההמלצה להמשך."

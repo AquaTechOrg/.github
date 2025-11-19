@@ -1,0 +1,29 @@
+name: "Release 📦"
+description: "צ'קליסט לתכנון והוצאה של גרסה חדשה לפרודקשן"
+title: "Release v"
+type: "Release 📦"
+
+body:
+  - type: textarea
+    id: pre_release_checklist
+    attributes:
+      label: "צ'קליסט לפני שחרור"
+      description: "משימות שיש לבצע לפני העלאת הגרסה."
+      value: |
+        - [ ] כל המשימות בגרסה עברו QA ונסגרו.
+        - [ ] בוצעו בדיקות רגרסיה מלאות על סביבת ה-Staging.
+        - [ ] קובץ ה-CHANGELOG עודכן.
+        - [ ] נוצר תג (tag) ב-Git עבור הגרסה.
+        - [ ] התקבל אישור סופי לשחרור.
+    validations:
+      required: true
+
+  - type: textarea
+    id: post_release_checklist
+    attributes:
+      label: "צ'קליסט אחרי שחרור"
+      description: "משימות שיש לבצע לאחר שהגרסה עלתה לאוויר."
+      value: |
+        - [ ] הגרסה עלתה בהצלחה לפרודקשן.
+        - [ ] בוצע ניטור לוגים ווידוא תקינות המערכת.
+        - [ ] נשלח עדכון לבעלי העניין על שחרור הגרסה.
