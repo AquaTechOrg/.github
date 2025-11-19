@@ -1,0 +1,35 @@
+name: "User Story 📖"
+description: "טופס ליצירת סיפור משתמש (User Story) - תכונה או פונקציונליות חדשה"
+title:  ""
+type: User Story 📖
+
+body:
+  - type: input
+    id: user_story
+    attributes:
+      label: "הסיפור"
+      description: "תאר את הסיפור בפורמט: כ[סוג משתמש], אני רוצה [מה], כדי ש[מדוע]"
+      placeholder: "כמשתמש רגיל, אני רוצה לשמור פוסטים למועדפים, כדי שאוכל לחזור אליהם מאוחר יותר"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: "קריטריוני קבלה"
+      description: "מה צריך להתקיים כדי שהסיפור ייחשב הושלם"
+      placeholder: |
+        - המשתמש יכול ללחוץ על כפתור "שמור למועדפים"
+        - הפוסט מופיע ברשימת המועדפים
+        - המשתמש יכול להסיר פוסט מהמועדפים
+    validations:
+      required: true
+
+  - type: input
+    id: specification_link
+    attributes:
+      label: "קישור למסמך אפיון / מסמך עיצוב"
+      description: "אם יש מסמך שמסביר איך התכונה אמורה לעבוד, הכנס כאן את הקישור"
+      placeholder: "https://…"
+    validations:
+      required: false
