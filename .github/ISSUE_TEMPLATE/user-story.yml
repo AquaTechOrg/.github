@@ -1,18 +1,10 @@
 name: "User Story 📖"
 description: "טופס ליצירת סיפור משתמש (User Story) - תכונה או פונקציונליות חדשה"
-title: "{{story_title}}"
+title:  "[User Story:] "
 type: User Story 📖
 
 body:
-  - type: input
-    id: story_title
-    attributes:
-      label: "כותרת הסיפור"
-      description: "הכנס כאן את כותרת הסיפור בקצרה"
-      placeholder: "לדוגמה: שמור פוסטים למועדפים"
-    validations:
-      required: true
-  - type: input
+  - type: textarea
     id: user_story
     attributes:
       label: "הסיפור"
