@@ -1,8 +1,0 @@
-blank_issues_enabled: false
-contact_links:
-  - name: "שאלה כללית"
-    url: "https://github.com/orgs/AquaTechOrg/discussions"
-    about: "לשאלות ושיחות כלליות על הפרויקטים בארגון"
-  - name: "דיווח אבטחה"
-    url: "https://aquatech.example.com/security"
-    about: "שלחו פרטי פגיעות באופן פרטי (הטופס מאובטח)"
