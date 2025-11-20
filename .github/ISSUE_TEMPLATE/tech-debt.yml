@@ -1,6 +1,6 @@
 name: "Tech Debt ⚙️"
 description: "טופס לתיעוד, מעקב וטיפול בחוב טכני במערכת"
-labels: "Tech Debt ⚙️"
+type: "Tech Debt ⚙️"
 
 body:
   - type: textarea
