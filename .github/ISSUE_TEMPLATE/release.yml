@@ -8,7 +8,6 @@ body:
     id: pre_release_checklist
     attributes:
       label: "צ'קליסט לפני שחרור"
-      style: "direction: rtl; text-align: right;"
       description: "משימות שיש לבצע לפני העלאת הגרסה."
       value: |
         - [ ] כל המשימות בגרסה עברו QA ונסגרו.
