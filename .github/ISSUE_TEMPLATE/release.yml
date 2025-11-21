@@ -12,8 +12,8 @@ body:
       value: |
         - [ ] All tasks in the release have passed QA and are closed.
         - [ ] Full regression testing has been completed on the staging environment.
-        - [ ] The CHANGELOG file has been updated.
         - [ ] A Git tag has been created for the release.
+        - [ ] The CHANGELOG appear in the new release created.
         - [ ] Final approval for release has been received.
     validations:
       required: true
