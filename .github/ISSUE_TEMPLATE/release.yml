@@ -10,11 +10,11 @@ body:
       label: "צ'קליסט לפני שחרור"
       description: "משימות שיש לבצע לפני העלאת הגרסה."
       value: |
-        - [ ] כל המשימות בגרסה עברו QA ונסגרו.
-        - [ ] בוצעו בדיקות רגרסיה מלאות על סביבת ה-Staging.
-        - [ ] קובץ ה-CHANGELOG עודכן.
-        - [ ] נוצר תג (tag) ב-Git עבור הגרסה.
-        - [ ] התקבל אישור סופי לשחרור.
+        - [ ] All tasks in the release have passed QA and are closed.
+        - [ ] Full regression testing has been completed on the staging environment.
+        - [ ] The CHANGELOG file has been updated.
+        - [ ] A Git tag has been created for the release.
+        - [ ] Final approval for release has been received.
     validations:
       required: true
 
@@ -24,6 +24,6 @@ body:
       label: "צ'קליסט אחרי שחרור"
       description: "משימות שיש לבצע לאחר שהגרסה עלתה לאוויר."
       value: |
-        - [ ] הגרסה עלתה בהצלחה לפרודקשן.
-        - [ ] בוצע ניטור לוגים ווידוא תקינות המערכת.
-        - [ ] נשלח עדכון לבעלי העניין על שחרור הגרסה.
+        - [ ] The release has been successfully deployed to production.
+        - [ ] System logs have been monitored and system health is confirmed.
+        - [ ] Stakeholders have been notified of the new release.
