@@ -249,7 +249,7 @@ jobs:
                       child_iter = child_meta['iteration']
                       if not child_iter or child_iter['id'] != it['id']:
                           mutation = """
-                          mutation($p:ID!,$i:ID!,$f:ID!,$val:ID!){
+                          mutation($p:ID!,$i:ID!,$f:ID!,$val:String!){
                             updateProjectV2ItemFieldValue(input:{
                               projectId:$p
                               itemId:$i
