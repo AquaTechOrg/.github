@@ -19,6 +19,7 @@ jobs:
           ORG: AquaTechOrg
           PROJECT_NUMBER: 6
         run: |
+          # First page (includes fields)
           gh api graphql -f query='
           query($org:String!,$num:Int!){
             organization(login:$org){
@@ -29,7 +30,8 @@ jobs:
                     ... on ProjectV2IterationField { id name }
                   }
                 }
-                items(first:200){
+                items(first:100){
+                  pageInfo { hasNextPage endCursor }
                   nodes{
                     id
                     content{
@@ -54,6 +56,59 @@ jobs:
               }
             }
           }' -f org=$ORG -F num=$PROJECT_NUMBER > project.json
+
+          has_next=$(jq -r '.data.organization.projectV2.items.pageInfo.hasNextPage' project.json)
+          cursor=$(jq -r '.data.organization.projectV2.items.pageInfo.endCursor' project.json)
+
+          while [ "$has_next" = "true" ] && [ "$cursor" != "null" ]; do
+            echo "Fetching next page after $cursor"
+            gh api graphql -f query='
+            query($org:String!,$num:Int!,$after:String){
+              organization(login:$org){
+                projectV2(number:$num){
+                  items(first:100, after:$after){
+                    pageInfo { hasNextPage endCursor }
+                    nodes{
+                      id
+                      content{
+                        ... on Issue {
+                          id
+                          number
+                          title
+                          repository { owner { login } name }
+                        }
+                      }
+                      fieldValues(first:10){
+                        nodes{
+                          ... on ProjectV2ItemFieldIterationValue {
+                            field { ... on ProjectV2IterationField { id name } }
+                            iterationId
+                            title
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f org=$ORG -F num=$PROJECT_NUMBER -f after="$cursor" > page.json
+
+            # Merge new nodes into project.json
+            jq -s '
+              .[0].data.organization.projectV2.items.nodes +=
+              .[1].data.organization.projectV2.items.nodes
+              | .[0].data.organization.projectV2.items.pageInfo =
+              .[1].data.organization.projectV2.items.pageInfo
+              | .[0]
+            ' project.json page.json > merged.json
+            mv merged.json project.json
+
+            has_next=$(jq -r '.data.organization.projectV2.items.pageInfo.hasNextPage' project.json)
+            cursor=$(jq -r '.data.organization.projectV2.items.pageInfo.endCursor' project.json)
+          done
+
+          echo "Total items collected: $(jq '.data.organization.projectV2.items.nodes | length' project.json)"
+
           echo "PROJECT_ID=$(jq -r '.data.organization.projectV2.id' project.json)" >> $GITHUB_ENV
           echo "ITERATION_FIELD_ID=$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name==\"Iteration\") | .id' project.json)" >> $GITHUB_ENV
       - name: Sync iterations
@@ -61,17 +116,18 @@ jobs:
           GH_TOKEN: ${{ secrets.TEST }}
         run: |
           python3 - <<'PY'
-          import json, os, subprocess, sys
+          import json, os, subprocess
 
           def sh(cmd):
               r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
               if r.returncode!=0: print(r.stderr.strip())
               return r.stdout.strip()
 
-          with open('project.json') as f: data=json.load(f)
+          with open('project.json') as f:
+              data=json.load(f)
           proj=data['data']['organization']['projectV2']
           project_id=os.environ['PROJECT_ID']
-            # iteration field id
+          # iteration field id
           iter_field=os.environ['ITERATION_FIELD_ID']
 
           # Build map: repo -> issue_number -> {item_id, iteration_id, iteration_title}
