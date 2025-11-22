@@ -1,18 +1,11 @@
 # This workflow synchronizes iterations between parent issues and their sub-issues
 name: Sync Sub-Issue Iterations
 on:
+  schedule:
+    - cron: '*/15 * * * *'
   workflow_dispatch:
   issues:
-    types:
-      - opened
-      - edited
-      - labeled
-      - unlabeled
-      - reopened
-      - closed
-      - transferred
-      - milestoned
-      - demilestoned
+    types: [edited]
 concurrency:
   group: sub-issue-iteration-sync
   cancel-in-progress: true
