@@ -62,7 +62,7 @@ jobs:
           echo 'PROJECT_ID='$(jq -r '.data.organization.projectV2.id' project_data.json) >> $GITHUB_ENV
           echo 'ITERATION_FIELD_ID='$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name== "Iteration") | .id' project_data.json) >> $GITHUB_ENV
 
-      - name: Get all project items with iterations
+      - name: Get all project items with iterations and relationships
         env:
           GH_TOKEN: ${{ secrets.TEST }}
         run: |
@@ -86,6 +86,30 @@ jobs:
                               login
                             }
                           }
+                          trackedIssues(first: 20) {
+                            nodes {
+                              number
+                              title
+                              repository {
+                                name
+                                owner {
+                                  login
+                                }
+                              }
+                            }
+                          }
+                          trackingIssues(first: 20) {
+                            nodes {
+                              number
+                              title
+                              repository {
+                                name
+                                owner {
+                                  login
+                                }
+                              }
+                            }
+                          }
                         }
                       }
                       fieldValues(first: 20) {
@@ -107,6 +131,24 @@ jobs:
                 }
               }
             }' -f projectId=$PROJECT_ID > project_items.json
+
+      - name: Discover organization repositories and issues
+        env:
+          GH_TOKEN: ${{ secrets.TEST }}
+        run: |
+          echo "=== ORGANIZATION-WIDE DISCOVERY ==="
+          echo "Finding all repositories in AquaTechOrg with issues in the project..."
+          
+          # Get all repositories in the organization
+          echo "Repositories in organization:"
+          gh repo list AquaTechOrg --limit 100 --json name,owner,isPrivate | jq -r '.[] | "\(.owner.login)/\(.name)"'
+          
+          echo ""
+          echo "=== SAMPLE ISSUE CONTENT FROM PROJECT ==="
+          # The project items will contain issues from various repos
+          # We'll analyze them in the Python script, but let's show what we have
+          echo "Project items by repository:"
+          jq -r '.data.node.items.nodes[].content | select(.repository != null) | "\(.repository.owner.login)/\(.repository.name)#\(.number): \(.title)"' project_items.json | sort
 
       - name: Debug project data
         run: |
@@ -140,30 +182,53 @@ jobs:
                   print(f"Error: {e.stderr}")
                   return None
 
-          def extract_issue_references(body, title=""):
+          def get_tracked_issues(issue_content):
+              """Get GitHub-tracked issues (sub-issues)"""
+              tracked_issues = []
+              if issue_content and 'trackedIssues' in issue_content:
+                  for tracked in issue_content['trackedIssues']['nodes']:
+                      repo = tracked['repository']
+                      repo_key = f"{repo['owner']['login']}/{repo['name']}"
+                      tracked_issues.append((repo_key, tracked['number']))
+                      print(f"      GitHub tracked issue: {repo_key}#{tracked['number']}")
+              return tracked_issues
+
+          def get_tracking_issues(issue_content):
+              """Get GitHub-tracking issues (parent issues)"""
+              tracking_issues = []
+              if issue_content and 'trackingIssues' in issue_content:
+                  for tracking in issue_content['trackingIssues']['nodes']:
+                      repo = tracking['repository']
+                      repo_key = f"{repo['owner']['login']}/{repo['name']}"
+                      tracking_issues.append((repo_key, tracking['number']))
+                      print(f"      GitHub tracking issue: {repo_key}#{tracking['number']}")
+              return tracking_issues
+
+          def extract_issue_references(body, title="", current_repo=""):
               """Extract issue references from issue body and title"""
               if not body:
                   body = ""
               if not title:
                   title = ""
               
-              full_text = f"{title}\n{body}".lower()
+              full_text = f"{title}\n{body}"
+              print(f"  Full text being analyzed:")
+              print(f"    Title: '{title}'")
+              print(f"    Body: '{body[:500]}{'...' if len(body) > 500 else ''}'")
               
               # Enhanced patterns to match various issue reference formats
               patterns = [
-                  r'(?:closes?|fixes?|resolves?)\s+#(\d+)',  # closes #123
-                  r'(?:closes?|fixes?|resolves?)\s+(\w+/\w+)#(\d+)',  # closes owner/repo#123
-                  r'#(\d+)',  # #123
-                  r'(\w+/\w+)#(\d+)',  # owner/repo#123
-                  r'- \[ \] .*#(\d+)',  # - [ ] task #123
-                  r'- \[x\] .*#(\d+)',  # - [x] completed #123
-                  r'- \[[xX]\] .*#(\d+)',  # - [X] completed #123
-                  r'(?:sub-?issue|child|task).*#(\d+)',  # sub-issue #123
-                  r'(?:parent|related).*#(\d+)',  # parent #123
+                  r'(?:closes?|fixes?|resolves?)\s*[:#]?\s*#(\d+)',  # closes #123
+                  r'(?:closes?|fixes?|resolves?)\s+([a-zA-Z0-9\-_]+/[a-zA-Z0-9\-_]+)#(\d+)',  # closes owner/repo#123
+                  r'(?:include|contains|epic|parent)\s*[:#]?\s*#(\d+)',  # includes #123
+                  r'(?:sub[-\s]?(?:issue|task)|child|task)\s*[:#]?\s*#(\d+)',  # sub-issue #123
+                  r'(?:related|linked)\s*[:#]?\s*#(\d+)',  # related #123
+                  r'- \[[x\s]\] [^#]*#(\d+)',  # - [x] task #123, - [ ] task #123
+                  r'([a-zA-Z0-9\-_]+/[a-zA-Z0-9\-_]+)#(\d+)',  # owner/repo#123 (explicit cross-repo)
+                  r'(?<!\w)#(\d+)(?!\w)',  # #123 (standalone)
               ]
               
               references = []
-              print(f"  Analyzing text: {full_text[:200]}...")
               
               for i, pattern in enumerate(patterns):
                   matches = re.findall(pattern, full_text, re.IGNORECASE | re.MULTILINE)
@@ -177,12 +242,20 @@ jobs:
                           elif len(match) == 2:  # owner/repo#123 format
                               references.append((match[0], int(match[1])))
                               print(f"      Found cross-repo reference: {match[0]}#{match[1]}")
-                          elif len(match) == 1:  # #123 format from complex pattern
-                              references.append(int(match[0]))
-                              print(f"      Found same-repo reference: #{match[0]}")
+                          elif len(match) == 1:  # #123 format - use current repo
+                              if current_repo:
+                                  references.append((current_repo, int(match[0])))
+                                  print(f"      Found same-repo reference: {current_repo}#{match[0]}")
+                              else:
+                                  references.append(int(match[0]))
+                                  print(f"      Found reference: #{match[0]} (repo unknown)")
                       else:
-                          references.append(int(match))
-                          print(f"      Found same-repo reference: #{match}")
+                          if current_repo:
+                              references.append((current_repo, int(match)))
+                              print(f"      Found same-repo reference: {current_repo}#{match}")
+                          else:
+                              references.append(int(match))
+                              print(f"      Found reference: #{match} (repo unknown)")
               
               # Remove duplicates while preserving order
               unique_refs = []
@@ -192,7 +265,7 @@ jobs:
                       unique_refs.append(ref)
                       seen.add(ref)
               
-              print(f"  Total unique references found: {len(unique_refs)}")
+              print(f"  Total unique text references: {len(unique_refs)}")
               return unique_refs
 
           def get_iteration_for_item(item):
@@ -314,26 +387,60 @@ jobs:
                   potential_parents += 1
                   print(f"  Parent iteration: {parent_iteration.get('title')}")
                   
+                  # Get GitHub native tracked issues (sub-issues)
+                  print(f"  Checking GitHub tracked issues...")
+                  tracked_refs = get_tracked_issues(content)
+                  
                   # Find child issues referenced in the body and title
-                  child_refs = extract_issue_references(
+                  print(f"  Checking text-based references...")
+                  text_refs = extract_issue_references(
                       content.get('body', ''), 
-                      content.get('title', '')
+                      content.get('title', ''),
+                      repo_key  # Pass current repo for same-repo references
                   )
                   
-                  if not child_refs:
-                      print(f"  No child references found")
+                  # Combine both types of references
+                  all_child_refs = []
+                  
+                  # Add tracked issues (GitHub native)
+                  for tracked_ref in tracked_refs:
+                      if isinstance(tracked_ref, tuple):
+                          all_child_refs.append(tracked_ref)
+                      else:
+                          all_child_refs.append(tracked_ref)
+                  
+                  # Add text references
+                  for text_ref in text_refs:
+                      if isinstance(text_ref, tuple):
+                          all_child_refs.append(text_ref)
+                      else:
+                          all_child_refs.append(text_ref)
+                  
+                  # Remove duplicates
+                  unique_child_refs = []
+                  seen = set()
+                  for ref in all_child_refs:
+                      if ref not in seen:
+                          unique_child_refs.append(ref)
+                          seen.add(ref)
+                  
+                  if not unique_child_refs:
+                      print(f"  No child references found (neither tracked nor text-based)")
                       continue
                   
-                  relationships_found += len(child_refs)
-                  print(f"  Found {len(child_refs)} potential child references")
+                  relationships_found += len(unique_child_refs)
+                  print(f"  Found {len(unique_child_refs)} total child references")
+                  print(f"    - GitHub tracked: {len(tracked_refs)}")
+                  print(f"    - Text-based: {len(text_refs)}")
                   
-                  for child_ref in child_refs:
-                      child_repo = repo_key
-                      child_number = child_ref
-                      
-                      # Handle cross-repo references
+                  for child_ref in unique_child_refs:
+                      # Normalize child reference format
                       if isinstance(child_ref, tuple):
                           child_repo, child_number = child_ref
+                      else:
+                          # Fallback for old format or issues
+                          child_repo = repo_key
+                          child_number = child_ref
                       
                       print(f"    Checking child: {child_repo}#{child_number}")
                       
@@ -395,8 +502,45 @@ jobs:
           echo "Recent issues in repositories:"
           gh search issues --owner AquaTechOrg --limit 5 --sort updated --json number,title,repository,updatedAt
           
+      - name: Provide relationship setup instructions
+        env:
+          GH_TOKEN: ${{ secrets.TEST }}
+        run: |
+          echo "=== HOW TO ESTABLISH CROSS-REPOSITORY RELATIONSHIPS ==="
+          echo ""
+          echo "This workflow now operates ORGANIZATION-WIDE across ALL repositories!"
+          echo ""
+          echo "METHOD 1: GitHub Native Tracking (Recommended)"
+          echo "1. Go to any parent issue (with iteration set)"
+          echo "2. In the right sidebar, look for 'Tracked by' or 'Tracks' section"
+          echo "3. Click 'Add tracked issue' and select issues from ANY repo"
+          echo "4. Both same-repo and cross-repo tracking supported"
+          echo ""
+          echo "METHOD 2: Cross-Repository Text References"
+          echo "1. Edit parent issue description to include:"
+          echo "   Same repo:     'Sub-tasks: #123'"
+          echo "   Cross repo:    'Sub-tasks: owner/repo-name#456'"
+          echo "   Task list:     '- [ ] owner/other-repo#789'"
+          echo "   Epic format:   'Epic includes: #123, owner/repo#456'"
+          echo ""
+          echo "METHOD 3: GitHub CLI Examples"
+          echo "gh issue edit 1 --repo AquaTechOrg/main-repo --body 'Epic includes: #2, AquaTechOrg/backend#45'"
+          echo ""
+          echo "METHOD 4: Automatic Discovery"
+          echo "- The workflow automatically finds all repos in AquaTechOrg"
+          echo "- Issues from ANY repository can be parents/children"
+          echo "- Cross-repository iteration sync is fully supported"
+          echo ""
+          echo "EXAMPLES OF VALID REFERENCES:"
+          echo "- #123 (same repository)"
+          echo "- AquaTechOrg/backend#456 (specific repository)"
+          echo "- AquaTechOrg/frontend#789 (another repository)"
+          echo "- owner/any-repo#999 (any repository)"
+
       - name: Log synchronization results
         run: |
           echo "Iteration synchronization completed at $(date)"
           echo "Check the logs above to see if any relationships were found and processed."
+          echo ""
+          echo "If 'Total updates made: 0', follow the relationship setup instructions above."
 
