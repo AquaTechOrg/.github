@@ -345,33 +345,20 @@ jobs:
               """Use GraphQL API to retrieve issues tracked BY this issue (children)."""
               tracked = []
               try:
-                  # Build GraphQL query with escaped braces to avoid f-string parsing issues
-                  query = '''
-                  query {{
-                    repository(owner: "{repo_owner}", name: "{repo_name}") {{
-                      issue(number: {issue_number}) {{
-                        trackedIssues(first: 100) {{
-                          nodes {{
-                            number
-                            title
-                            repository {{ owner {{ login }} name }}
-                          }}
-                        }}
-                        tracks(first: 100) {{
-                          nodes {{
-                            number
-                            title
-                            repository {{ owner {{ login }} name }}
-                          }}
-                        }}
-                      }}
-                    }}
-                  }}
-                  '''.format(repo_owner=repo_owner, repo_name=repo_name, issue_number=issue_number)
-                  cmd = f"gh api graphql -f query='{query}'"
+                  # Query only trackedIssues (children). 'tracks' field removed (was invalid).
+                  query = 'query($owner:String!,$name:String!,$num:Int!){ repository(owner:$owner,name:$name){ issue(number:$num){ trackedIssues(first:100){ nodes { number title repository { owner { login } name } } } } } }'
+                  cmd = (
+                      "gh api graphql -f query='" + query + "'" +
+                      f" -f owner={repo_owner} -f name={repo_name} -F num={issue_number}"
+                  )
                   result = run_gh_command(cmd)
                   if result:
                       data = json.loads(result)
+                      # Handle GraphQL errors (e.g., feature not enabled)
+                      if 'errors' in data:
+                          print("    GraphQL errors:")
+                          for err in data['errors']:
+                              print(f"      - {err.get('message')}")
                       issue_data = data.get('data', {}).get('repository', {}).get('issue', {})
                       children = issue_data.get('trackedIssues', {}).get('nodes', [])
                       for child in children:
@@ -381,16 +368,10 @@ jobs:
                           ref = f"{owner}/{name}#{num}"
                           tracked.append(ref)
                           print(f"    GraphQL tracked issue (child): {ref}")
-                      # 'tracks' are parents this issue is tracked by; useful for reverse validation
-                      parents = issue_data.get('tracks', {}).get('nodes', [])
-                      for parent in parents:
-                          owner = parent['repository']['owner']['login']
-                          name = parent['repository']['name']
-                          num = parent['number']
-                          ref = f"{owner}/{name}#{num}"
-                          print(f"    GraphQL parent (tracks): {ref}")
+                      if not children:
+                          print("    No trackedIssues returned (feature disabled or no children)")
                   else:
-                      print("    No GraphQL tracked issues data returned")
+                      print("    No GraphQL response for tracked issues")
               except Exception as e:
                   print(f"    Error querying tracked issues (GraphQL) for {repo_owner}/{repo_name}#{issue_number}: {e}")
               return tracked
