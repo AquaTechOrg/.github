@@ -118,19 +118,25 @@ jobs:
           python3 - <<'PY'
           import json, os, subprocess
 
-          def sh(cmd):
+          def sh_json(endpoint):
+              cmd=f"{endpoint} -H 'Accept: application/vnd.github+json'"
               r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-              if r.returncode!=0: print(r.stderr.strip())
-              return r.stdout.strip()
+              if r.returncode != 0:
+                  print(f"[REST] {endpoint} -> {r.stderr.strip()}")
+                  return None
+              out=r.stdout.strip()
+              try:
+                  return json.loads(out) if out else None
+              except json.JSONDecodeError:
+                  print(f"[REST] Non-JSON response for {endpoint}: {out[:120]}")
+                  return None
 
           with open('project.json') as f:
               data=json.load(f)
           proj=data['data']['organization']['projectV2']
           project_id=os.environ['PROJECT_ID']
-          # iteration field id
           iter_field=os.environ['ITERATION_FIELD_ID']
 
-          # Build map: repo -> issue_number -> {item_id, iteration_id, iteration_title}
           issues={}
           for n in proj['items']['nodes']:
               c=n.get('content')
@@ -142,41 +148,46 @@ jobs:
                       issues[repo][c['number']]['iteration']={'id':fv['iterationId'],'title':fv.get('title')}
                       break
 
-          # If issue event: narrow scope
-          event_issue=os.environ.get('GITHUB_EVENT_NAME')=='issues' and os.environ.get('GITHUB_EVENT_PATH')
           targeted=None
-          if event_issue:
+          if os.environ.get('GITHUB_EVENT_NAME')=='issues' and os.environ.get('GITHUB_EVENT_PATH'):
               with open(os.environ['GITHUB_EVENT_PATH']) as f: ev=json.load(f)
-              repo = ev['repository']['full_name']
-              num  = ev['issue']['number']
-              targeted=(repo,num)
+              targeted=(ev['repository']['full_name'], ev['issue']['number'])
 
           parents=[]
           for repo, nums in issues.items():
               for num, meta in nums.items():
                   it=meta['iteration']
-                  if it and (not targeted or repo==targeted[0] and num==targeted[1] or not targeted):
-                      parents.append((repo,num,it))
+                  if not it: continue
+                  if targeted and (repo, num) != targeted:
+                      continue
+                  parents.append((repo,num,it))
 
           updates=0
           for repo,num,it in parents:
-              owner, name = repo.split('/',1)
-              # REST children (sub-issues this issue tracks)
-              out=sh(f'gh api repos/{owner}/{name}/issues/{num}/sub-issues -H "Accept: application/vnd.github+json"')
-              if not out: continue
-              try: children=json.loads(out)
-              except: continue
-              if not children: continue
-              for ch in children:
-                  child_repo=f"{ch['repository']['owner']['login']}/{ch['repository']['name']}"
-                  child_num=ch['number']
+              owner,name=repo.split('/',1)
+              endpoint=f"gh api repos/{owner}/{name}/issues/{num}/sub-issues"
+              data_list=sh_json(endpoint)
+              if data_list is None:
+                  continue
+              if not isinstance(data_list, list):
+                  print(f"[REST] Unexpected payload (not list) for {repo}#{num}: {data_list}")
+                  continue
+              if not data_list:
+                  continue
+              for ch in data_list:
+                  # Guard keys
+                  if not isinstance(ch, dict): continue
+                  try:
+                      child_repo=f"{ch['repository']['owner']['login']}/{ch['repository']['name']}"
+                      child_num=ch['number']
+                  except KeyError:
+                      continue
                   if child_repo in issues and child_num in issues[child_repo]:
                       child_meta=issues[child_repo][child_num]
                       child_iter=child_meta['iteration']
                       if not child_iter or child_iter['id']!=it['id']:
-                          # Update iteration
                           mutation='''
-                          mutation($p:ID!,$i:ID!,$f:ID!,$val:String){
+                          mutation($p:ID!,$i:ID!,$f:ID!,$val:ID!){
                             updateProjectV2ItemFieldValue(input:{
                               projectId:$p
                               itemId:$i
@@ -185,9 +196,15 @@ jobs:
                             }){ projectV2Item { id } }
                           }'''
                           item_id=child_meta['item_id']
-                          r=sh(f"gh api graphql -f query='{mutation}' -f p={project_id} -f i={item_id} -f f={iter_field} -f val={it['id']}")
-                          print(f"Updated {child_repo}#{child_num} -> {it['title']}")
-                          updates+=1
+                          r=subprocess.run(
+                              f"gh api graphql -f query='{mutation}' -f p={project_id} -f i={item_id} -f f={iter_field} -f val={it['id']}",
+                              shell=True, capture_output=True, text=True
+                          )
+                          if r.returncode==0:
+                              print(f"Updated {child_repo}#{child_num} -> {it['title']}")
+                              updates+=1
+                          else:
+                              print(f"Failed update {child_repo}#{child_num}: {r.stderr.strip()}")
           print(f"Total parents scanned: {len(parents)}")
           print(f"Iteration updates applied: {updates}")
           PY
