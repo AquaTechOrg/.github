@@ -10,4 +10,4 @@ body:
       description: "מהו הנושא המרכזי של ההדרכה?"
       placeholder: "לדוגמה: שימוש ב-GitHub Actions, עקרונות SOLID, היכרות עם המערכת החדשה"
     validations:
-      required: true
+      required: false

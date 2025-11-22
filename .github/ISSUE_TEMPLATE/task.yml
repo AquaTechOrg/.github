@@ -10,4 +10,4 @@ body:
       description: "תאר בפירוט מה צריך לעשות, כולל רקע טכני אם נדרש."
       placeholder: "לדוגמה: שדרוג ספריית React לגרסה 18, יצירת אינדקס חדש במסד הנתונים..."
     validations:
-      required: true
+      required: false

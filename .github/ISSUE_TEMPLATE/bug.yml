@@ -9,24 +9,7 @@ body:
       label: "מה הבעיה?"
       placeholder: "לדוגמה: כפתור השמירה לא עובד"
     validations:
-      required: true
-
-  - type: textarea
-    id: steps
-    attributes:
-      label: "מה עשיתי כדי לגרום לבעיה לקרות?"
-      placeholder: "לדוגמה: נכנסתי לעמוד הפרופיל ולחצתי על שמירה"
-    validations:
-      required: true
-
-  - type: textarea
-    id: expected
-    attributes:
-      label: "מה היית מצפה שיקרה?"
-      placeholder: "לדוגמה: שהפרופיל יישמר ויופיע אישור"
-    validations:
       required: false
-
 
   - type: textarea
     id: screenshots

@@ -10,7 +10,7 @@ body:
       description: "תאר את החוב הטכני, היכן הוא נמצא בקוד, ומדוע הוא נוצר."
       placeholder: "לדוגמה: שימוש בספרייה מיושנת, קוד משוכפל, חוסר בבדיקות יחידה..."
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: proposed_solution
@@ -19,7 +19,7 @@ body:
       description: "תאר את הדרך המומלצת לטפל בחוב הטכני."
       placeholder: "לדוגמה: לבצע Refactor לקומפוננטה X, לשדרג את ספרייה Y, לכתוב בדיקות..."
     validations:
-      required: true
+      required: false
 
 
   - type: textarea

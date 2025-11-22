@@ -10,4 +10,4 @@ body:
       description: "מהו הנושא המרכזי של התיעוד שיש לכתוב או לעדכן?"
       placeholder: "לדוגמה: איך להגדיר סביבת פיתוח, הסבר על API חדש..."
     validations:
-      required: true
+      required: false

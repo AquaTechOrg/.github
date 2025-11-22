@@ -16,7 +16,7 @@ body:
         - [ ] The CHANGELOG appear in the new release created.
         - [ ] Final approval for release has been received.
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: post_release_checklist
@@ -27,3 +27,5 @@ body:
         - [ ] The release has been successfully deployed to production.
         - [ ] System logs have been monitored and system health is confirmed.
         - [ ] Stakeholders have been notified of the new release.
+    validations:
+      required: false

@@ -10,7 +10,7 @@ body:
       description: "תאר את הסיפור בפורמט: כ[סוג משתמש], אני רוצה [מה], כדי ש[מדוע]"
       placeholder: "כמשתמש רגיל, אני רוצה לשמור פוסטים למועדפים, כדי שאוכל לחזור אליהם מאוחר יותר"
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: acceptance_criteria
@@ -22,7 +22,7 @@ body:
         - הפוסט מופיע ברשימת המועדפים
         - המשתמש יכול להסיר פוסט מהמועדפים
     validations:
-      required: true
+      required: false
 
   - type: input
     id: specification_link

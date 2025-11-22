@@ -10,7 +10,7 @@ body:
       description: "מהי השאלה העיקרית שהספייק הזה בא לענות עליה?"
       placeholder: "לדוגמה: מהי הדרך הטובה ביותר ליישם חיפוש בזמן אמת? האם כדאי להשתמש בספרייה X או Y?"
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: investigation_plan
@@ -22,7 +22,7 @@ body:
         - בניית Proof of Concept (POC) קטן עם הפתרון המועדף.
         - סיכום יתרונות וחסרונות של כל גישה.
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: outcome
@@ -31,10 +31,12 @@ body:
       description: "מה התוצר הסופי של הספייק? מה יעזור לנו לקבל החלטה?"
       placeholder: "לדוגמה: מסמך סיכום עם המלצה מנומקת, דוגמת קוד עובדת, דיאגרמת ארכיטקטורה."
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: findings
     attributes:
       label: "ממצאים (ימולא בסיום)"
       description: "בסיום הספייק, יש לסכם כאן את הממצאים, המסקנות, וההמלצה להמשך."
+    validations:
+      required: false
