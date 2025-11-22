@@ -321,7 +321,8 @@ jobs:
               connections = []
               try:
                   # Get issue timeline to find connected/disconnected events
-                  cmd = f'gh api repos/{repo_owner}/{repo_name}/issues/{issue_number}/timeline'
+                # Include preview headers in case sub-issue events require them
+                cmd = f'gh api repos/{repo_owner}/{repo_name}/issues/{issue_number}/timeline -H "Accept: application/vnd.github+json"'
                   result = run_gh_command(cmd)
                   if result:
                       timeline = json.loads(result)
@@ -342,6 +343,59 @@ jobs:
                   print(f"    Error getting connections for {repo_owner}/{repo_name}#{issue_number}: {e}")
               
               return connections
+
+          def get_tracked_issues(repo_owner, repo_name, issue_number):
+              """Use GraphQL API to retrieve issues tracked BY this issue (children)."""
+              tracked = []
+              try:
+                  query = f'''
+                  query {
+                    repository(owner: "{repo_owner}", name: "{repo_name}") {
+                      issue(number: {issue_number}) {
+                        trackedIssues(first: 100) {
+                          nodes {
+                            number
+                            title
+                            repository { owner { login } name }
+                          }
+                        }
+                        tracks(first: 100) {
+                          nodes {
+                            number
+                            title
+                            repository { owner { login } name }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  '''
+                  cmd = f"gh api graphql -f query='{query}'"
+                  result = run_gh_command(cmd)
+                  if result:
+                      data = json.loads(result)
+                      issue_data = data.get('data', {}).get('repository', {}).get('issue', {})
+                      children = issue_data.get('trackedIssues', {}).get('nodes', [])
+                      for child in children:
+                          owner = child['repository']['owner']['login']
+                          name = child['repository']['name']
+                          num = child['number']
+                          ref = f"{owner}/{name}#{num}"
+                          tracked.append(ref)
+                          print(f"    GraphQL tracked issue (child): {ref}")
+                      # 'tracks' are parents this issue is tracked by; useful for reverse validation
+                      parents = issue_data.get('tracks', {}).get('nodes', [])
+                      for parent in parents:
+                          owner = parent['repository']['owner']['login']
+                          name = parent['repository']['name']
+                          num = parent['number']
+                          ref = f"{owner}/{name}#{num}"
+                          print(f"    GraphQL parent (tracks): {ref}")
+                  else:
+                      print("    No GraphQL tracked issues data returned")
+              except Exception as e:
+                  print(f"    Error querying tracked issues (GraphQL) for {repo_owner}/{repo_name}#{issue_number}: {e}")
+              return tracked
 
           def get_iteration_for_item(item):
               """Get the current iteration for a project item"""
@@ -473,11 +527,15 @@ jobs:
                   
                   print(f"  Checking task list items...")
                   task_list_items = get_issue_task_list_items(repo_owner, repo_name, issue_number)
+
+                  print(f"  Checking GraphQL tracked issues (sub-issues)...")
+                  graphql_tracked = get_tracked_issues(repo_owner, repo_name, issue_number)
                   
                   # Combine all child references
                   all_child_refs = []
                   all_child_refs.extend(github_connections)
                   all_child_refs.extend(task_list_items)
+                  all_child_refs.extend(graphql_tracked)
                   
                   # Remove duplicates
                   child_refs = list(set(all_child_refs))
@@ -488,8 +546,9 @@ jobs:
                   
                   relationships_found += len(child_refs)
                   print(f"  Found {len(child_refs)} child references:")
-                  print(f"    - GitHub connections: {len(github_connections)}")
-                  print(f"    - Task list items: {len(task_list_items)}")
+                  print(f"    - GitHub connections (timeline): {len(github_connections)}")
+                  print(f"    - Task list items (parsed): {len(task_list_items)}")
+                  print(f"    - GraphQL trackedIssues: {len(graphql_tracked)}")
                   
                   for child_ref in child_refs:
                       # Parse child reference (format: "owner/repo#123")
@@ -544,6 +603,7 @@ jobs:
           print(f"Potential parent issues: {potential_parents}")
           print(f"Relationships found: {relationships_found}")
           print(f"Total updates made: {updates_made}")
+          print("NOTE: If relationships are missing, ensure the 'tracked issues' feature is enabled and the workflow token has sufficient repo+issues scope. Also confirm sub-issues are created via GitHub's native UI (Tracks / Tracked by).")
           EOF
 
           # Run the synchronization script
