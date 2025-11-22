@@ -108,6 +108,16 @@ jobs:
               }
             }' -f projectId=$PROJECT_ID > project_items.json
 
+      - name: Debug project data
+        run: |
+          echo "=== PROJECT DATA DEBUG ==="
+          echo "Project items structure:"
+          jq '.data.node.items.nodes | length' project_items.json
+          echo "First item:"
+          jq '.data.node.items.nodes[0]' project_items.json
+          echo "Items with content:"
+          jq '[.data.node.items.nodes[] | select(.content != null)] | length' project_items.json
+
       - name: Find parent-child relationships and sync iterations
         env:
           GH_TOKEN: ${{ secrets.TEST }}
@@ -221,15 +231,39 @@ jobs:
               return run_gh_command(cmd)
 
           # Load project data
+          print("Loading project data...")
           with open('project_items.json', 'r') as f:
               project_data = json.load(f)
 
           items = project_data['data']['node']['items']['nodes']
           project_id = os.environ['PROJECT_ID']
           iteration_field_id = os.environ['ITERATION_FIELD_ID']
+          
+          print(f"Project ID: {project_id}")
+          print(f"Iteration Field ID: {iteration_field_id}")
+          print(f"Total items in project: {len(items)}")
+
+          # Debug: Print first few items to understand structure
+          print("\n=== DEBUG: First 3 items structure ===")
+          for i, item in enumerate(items[:3]):
+              print(f"Item {i+1}:")
+              content = item.get('content')
+              if content:
+                  print(f"  Issue #{content.get('number', 'N/A')}: {content.get('title', 'No title')[:50]}...")
+                  repo = content.get('repository', {})
+                  print(f"  Repository: {repo.get('owner', {}).get('login', 'N/A')}/{repo.get('name', 'N/A')}")
+              else:
+                  print("  No content (not an issue)")
+              
+              iteration = get_iteration_for_item(item)
+              print(f"  Current iteration: {iteration.get('title') if iteration else 'None'}")
+              print()
 
           # Build a map of issues by repository and number
           issue_map = {}
+          issues_with_iterations = 0
+          issues_without_iterations = 0
+          
           for item in items:
               content = item.get('content')
               if content and content.get('number'):
@@ -240,25 +274,58 @@ jobs:
                   if repo_key not in issue_map:
                       issue_map[repo_key] = {}
                   
+                  iteration = get_iteration_for_item(item)
+                  if iteration and iteration.get('id'):
+                      issues_with_iterations += 1
+                  else:
+                      issues_without_iterations += 1
+                  
                   issue_map[repo_key][issue_number] = {
                       'item': item,
                       'content': content,
-                      'iteration': get_iteration_for_item(item)
+                      'iteration': iteration
                   }
 
+          print(f"\n=== PROJECT SUMMARY ===")
+          print(f"Total repositories: {len(issue_map)}")
+          print(f"Issues with iterations: {issues_with_iterations}")
+          print(f"Issues without iterations: {issues_without_iterations}")
+          
+          for repo_key, repo_issues in issue_map.items():
+              print(f"  {repo_key}: {len(repo_issues)} issues")
+
           # Find parent-child relationships and sync iterations
+          print(f"\n=== ANALYZING RELATIONSHIPS ===")
           updates_made = 0
+          potential_parents = 0
+          relationships_found = 0
           
           for repo_key, repo_issues in issue_map.items():
               for issue_number, issue_data in repo_issues.items():
                   content = issue_data['content']
                   parent_iteration = issue_data['iteration']
                   
+                  print(f"\nAnalyzing {repo_key}#{issue_number}: {content.get('title', 'No title')[:50]}...")
+                  
                   if not parent_iteration or not parent_iteration.get('id'):
+                      print(f"  Skipping - no iteration set")
                       continue
                   
-                  # Find child issues referenced in the body
-                  child_refs = extract_issue_references(content.get('body', ''))
+                  potential_parents += 1
+                  print(f"  Parent iteration: {parent_iteration.get('title')}")
+                  
+                  # Find child issues referenced in the body and title
+                  child_refs = extract_issue_references(
+                      content.get('body', ''), 
+                      content.get('title', '')
+                  )
+                  
+                  if not child_refs:
+                      print(f"  No child references found")
+                      continue
+                  
+                  relationships_found += len(child_refs)
+                  print(f"  Found {len(child_refs)} potential child references")
                   
                   for child_ref in child_refs:
                       child_repo = repo_key
@@ -268,13 +335,20 @@ jobs:
                       if isinstance(child_ref, tuple):
                           child_repo, child_number = child_ref
                       
+                      print(f"    Checking child: {child_repo}#{child_number}")
+                      
                       # Check if child issue exists in our project
                       if child_repo in issue_map and child_number in issue_map[child_repo]:
                           child_data = issue_map[child_repo][child_number]
                           child_iteration = child_data['iteration']
                           
+                          print(f"      Child found in project!")
+                          print(f"      Child current iteration: {child_iteration.get('title') if child_iteration else 'None'}")
+                          print(f"      Parent iteration: {parent_iteration.get('title')}")
+                          
                           # If child iteration is different from parent, update it
                           if not child_iteration or child_iteration.get('id') != parent_iteration.get('id'):
+                              print(f"      → NEEDS UPDATE!")
                               print(f"Syncing iteration for {child_repo}#{child_number}")
                               print(f"  From: {child_iteration.get('title', 'None') if child_iteration else 'None'}")
                               print(f"  To: {parent_iteration.get('title')}")
@@ -291,14 +365,38 @@ jobs:
                                   print(f"  ✓ Updated successfully")
                               else:
                                   print(f"  ✗ Update failed")
+                          else:
+                              print(f"      → Already in sync")
+                      else:
+                          print(f"      Child not found in project")
 
-          print(f"\nTotal updates made: {updates_made}")
+          print(f"\n=== FINAL SUMMARY ===")
+          print(f"Potential parent issues: {potential_parents}")
+          print(f"Relationships found: {relationships_found}")
+          print(f"Total updates made: {updates_made}")
           EOF
 
           # Run the synchronization script
           python3 sync_script.py
 
+      - name: Check for recent iteration changes (if available)
+        env:
+          GH_TOKEN: ${{ secrets.TEST }}
+        run: |
+          echo "=== CHECKING FOR RECENT CHANGES ==="
+          if [ "${{ github.event_name }}" = "issues" ]; then
+            echo "Triggered by issue event - Issue #${{ github.event.issue.number }}"
+            echo "Action: ${{ github.event.action }}"
+          else
+            echo "Triggered by schedule or manual dispatch"
+          fi
+          
+          # List recent issues to see what we're working with
+          echo "Recent issues in repositories:"
+          gh search issues --owner AquaTechOrg --limit 5 --sort updated --json number,title,repository,updatedAt
+          
       - name: Log synchronization results
         run: |
           echo "Iteration synchronization completed at $(date)"
+          echo "Check the logs above to see if any relationships were found and processed."
 
