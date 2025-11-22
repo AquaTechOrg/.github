@@ -79,7 +79,6 @@ jobs:
                           id
                           number
                           title
-                          body
                           repository {
                             name
                             owner {
@@ -107,6 +106,106 @@ jobs:
                 }
               }
             }' -f projectId=$PROJECT_ID > project_items.json
+
+      - name: Get issue relationships for all project issues
+        env:
+          GH_TOKEN: ${{ secrets.TEST }}
+        run: |
+          echo "=== DISCOVERING ISSUE RELATIONSHIPS ==="
+          
+          # Extract all issues from the project
+          echo "Getting relationships for all issues in project..."
+          
+          # Create a script to get sub-issue relationships
+          cat > get_relationships.py << 'EOF'
+          import json
+          import subprocess
+          import sys
+          
+          def run_command(cmd):
+              try:
+                  result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
+                  return result.stdout.strip()
+              except subprocess.CalledProcessError as e:
+                  print(f"Error running: {cmd}")
+                  print(f"Error: {e.stderr}")
+                  return None
+          
+          # Load project items
+          with open('project_items.json', 'r') as f:
+              project_data = json.load(f)
+          
+          all_relationships = {}
+          
+          items = project_data['data']['node']['items']['nodes']
+          for item in items:
+              content = item.get('content')
+              if not content or not content.get('number'):
+                  continue
+                  
+              repo_info = content['repository']
+              repo_name = f"{repo_info['owner']['login']}/{repo_info['name']}"
+              issue_number = content['number']
+              
+              print(f"Checking relationships for {repo_name}#{issue_number}")
+              
+              # Get issue details including timeline for sub-issue events
+              cmd = f'''gh api repos/{repo_name}/issues/{issue_number}/timeline --paginate'''
+              timeline_result = run_command(cmd)
+              
+              if timeline_result:
+                  try:
+                      timeline = json.loads(timeline_result)
+                      
+                      # Look for sub-issue relationships in timeline
+                      sub_issues = []
+                      parent_issues = []
+                      
+                      for event in timeline:
+                          if event.get('event') == 'converted_to_draft':
+                              continue
+                          elif event.get('event') == 'connected':
+                              # Issue was connected to another issue
+                              if 'subject' in event:
+                                  subject = event['subject']
+                                  if subject.get('type') == 'issue':
+                                      connected_repo = subject.get('repository', {}).get('full_name', repo_name)
+                                      connected_number = subject.get('number')
+                                      print(f"  Connected to {connected_repo}#{connected_number}")
+                          elif event.get('event') == 'disconnected':
+                              # Issue was disconnected from another issue  
+                              if 'subject' in event:
+                                  subject = event['subject']
+                                  if subject.get('type') == 'issue':
+                                      connected_repo = subject.get('repository', {}).get('full_name', repo_name)
+                                      connected_number = subject.get('number')
+                                      print(f"  Disconnected from {connected_repo}#{connected_number}")
+                      
+                      # Also try direct API for issue relationships if available
+                      try:
+                          # Try to get sub-issues using the newer API (beta feature)
+                          sub_cmd = f'''gh api graphql -f query='query {{ repository(owner: "{repo_info['owner']['login']}", name: "{repo_info['name']}") {{ issue(number: {issue_number}) {{ id number title }} }} }}' '''
+                          sub_result = run_command(sub_cmd)
+                          print(f"  Issue details retrieved")
+                      except:
+                          pass
+                          
+                  except json.JSONDecodeError:
+                      print(f"  Could not parse timeline for {repo_name}#{issue_number}")
+              
+              all_relationships[f"{repo_name}#{issue_number}"] = {
+                  'sub_issues': [],
+                  'parent_issues': []
+              }
+          
+          # Save relationships
+          with open('issue_relationships.json', 'w') as f:
+              json.dump(all_relationships, f, indent=2)
+              
+          print(f"Processed {len(all_relationships)} issues")
+          EOF
+          
+          python3 get_relationships.py
 
       - name: Analyze project content
         env:
@@ -157,69 +256,66 @@ jobs:
 
 
 
-          def extract_issue_references(body, title="", current_repo=""):
-              """Extract issue references from issue body and title"""
-              if not body:
-                  body = ""
-              if not title:
-                  title = ""
-              
-              full_text = f"{title}\n{body}"
-              print(f"  Full text being analyzed:")
-              print(f"    Title: '{title}'")
-              print(f"    Body: '{body[:500]}{'...' if len(body) > 500 else ''}'")
-              
-              # Enhanced patterns to match various issue reference formats
-              patterns = [
-                  r'(?:closes?|fixes?|resolves?)\s*[:#]?\s*#(\d+)',  # closes #123
-                  r'(?:closes?|fixes?|resolves?)\s+([a-zA-Z0-9\-_]+/[a-zA-Z0-9\-_]+)#(\d+)',  # closes owner/repo#123
-                  r'(?:include|contains|epic|parent)\s*[:#]?\s*#(\d+)',  # includes #123
-                  r'(?:sub[-\s]?(?:issue|task)|child|task)\s*[:#]?\s*#(\d+)',  # sub-issue #123
-                  r'(?:related|linked)\s*[:#]?\s*#(\d+)',  # related #123
-                  r'- \[[x\s]\] [^#]*#(\d+)',  # - [x] task #123, - [ ] task #123
-                  r'([a-zA-Z0-9\-_]+/[a-zA-Z0-9\-_]+)#(\d+)',  # owner/repo#123 (explicit cross-repo)
-                  r'(?<!\w)#(\d+)(?!\w)',  # #123 (standalone)
-              ]
-              
-              references = []
-              
-              for i, pattern in enumerate(patterns):
-                  matches = re.findall(pattern, full_text, re.IGNORECASE | re.MULTILINE)
-                  print(f"    Pattern {i+1} '{pattern}' found {len(matches)} matches")
-                  
-                  for match in matches:
-                      if isinstance(match, tuple):
-                          if len(match) == 3 and match[1]:  # closes owner/repo#123 format
-                              references.append((match[1], int(match[2])))
-                              print(f"      Found cross-repo reference: {match[1]}#{match[2]}")
-                          elif len(match) == 2:  # owner/repo#123 format
-                              references.append((match[0], int(match[1])))
-                              print(f"      Found cross-repo reference: {match[0]}#{match[1]}")
-                          elif len(match) == 1:  # #123 format - use current repo
-                              if current_repo:
-                                  references.append((current_repo, int(match[0])))
-                                  print(f"      Found same-repo reference: {current_repo}#{match[0]}")
-                              else:
-                                  references.append(int(match[0]))
-                                  print(f"      Found reference: #{match[0]} (repo unknown)")
-                      else:
-                          if current_repo:
-                              references.append((current_repo, int(match)))
-                              print(f"      Found same-repo reference: {current_repo}#{match}")
+          def get_issue_task_list_items(repo_owner, repo_name, issue_number):
+              """Get task list items from an issue using GitHub API"""
+              task_items = []
+              try:
+                  # Get the issue body
+                  cmd = f'gh api repos/{repo_owner}/{repo_name}/issues/{issue_number}'
+                  result = run_gh_command(cmd)
+                  if result:
+                      issue_data = json.loads(result)
+                      body = issue_data.get('body', '')
+                      
+                      # Parse task list items with issue references
+                      import re
+                      task_pattern = r'- \[[ x]\] .*?(?:^|\s)(?:([a-zA-Z0-9\-_]+)/([a-zA-Z0-9\-_]+))?#(\d+)(?:\s|$)'
+                      matches = re.findall(task_pattern, body, re.MULTILINE | re.IGNORECASE)
+                      
+                      for match in matches:
+                          repo_owner_ref, repo_name_ref, issue_num = match
+                          if repo_owner_ref and repo_name_ref:
+                              # Cross-repo reference
+                              task_items.append(f"{repo_owner_ref}/{repo_name_ref}#{issue_num}")
                           else:
-                              references.append(int(match))
-                              print(f"      Found reference: #{match} (repo unknown)")
+                              # Same repo reference
+                              task_items.append(f"{repo_owner}/{repo_name}#{issue_num}")
+                          
+                      print(f"    Found {len(task_items)} task list items with issue references")
+                      for item in task_items:
+                          print(f"      Task item: {item}")
+                          
+              except Exception as e:
+                  print(f"    Error parsing task list for {repo_owner}/{repo_name}#{issue_number}: {e}")
               
-              # Remove duplicates while preserving order
-              unique_refs = []
-              seen = set()
-              for ref in references:
-                  if ref not in seen:
-                      unique_refs.append(ref)
-                      seen.add(ref)
+              return task_items
+
+          def get_github_issue_connections(repo_owner, repo_name, issue_number):
+              """Get GitHub native issue connections using timeline API"""
+              connections = []
+              try:
+                  # Get issue timeline to find connected/disconnected events
+                  cmd = f'gh api repos/{repo_owner}/{repo_name}/issues/{issue_number}/timeline'
+                  result = run_gh_command(cmd)
+                  if result:
+                      timeline = json.loads(result)
+                      
+                      for event in timeline:
+                          if event.get('event') == 'connected':
+                              if 'subject' in event and event['subject'].get('type') == 'issue':
+                                  subject = event['subject']
+                                  conn_repo = subject.get('repository', {}).get('full_name', f"{repo_owner}/{repo_name}")
+                                  conn_number = subject.get('number')
+                                  if conn_repo and conn_number:
+                                      connections.append(f"{conn_repo}#{conn_number}")
+                                      print(f"    GitHub connection: {conn_repo}#{conn_number}")
+                      
+                      print(f"    Found {len(connections)} GitHub native connections")
+                      
+              except Exception as e:
+                  print(f"    Error getting connections for {repo_owner}/{repo_name}#{issue_number}: {e}")
               
-              print(f"  Total unique text references: {len(unique_refs)}")
-              return unique_refs
+              return connections
 
           def get_iteration_for_item(item):
               """Get the current iteration for a project item"""
@@ -340,29 +436,48 @@ jobs:
                   potential_parents += 1
                   print(f"  Parent iteration: {parent_iteration.get('title')}")
                   
-                  # Find child issues referenced in the body and title
-                  print(f"  Checking text-based references...")
-                  child_refs = extract_issue_references(
-                      content.get('body', ''), 
-                      content.get('title', ''),
-                      repo_key  # Pass current repo for same-repo references
-                  )
+                  # Get repository details
+                  repo_info = content['repository']
+                  repo_owner = repo_info['owner']['login']
+                  repo_name = repo_info['name']
+                  
+                  # Find child issues using GitHub native methods
+                  print(f"  Checking GitHub native issue connections...")
+                  github_connections = get_github_issue_connections(repo_owner, repo_name, issue_number)
+                  
+                  print(f"  Checking task list items...")
+                  task_list_items = get_issue_task_list_items(repo_owner, repo_name, issue_number)
+                  
+                  # Combine all child references
+                  all_child_refs = []
+                  all_child_refs.extend(github_connections)
+                  all_child_refs.extend(task_list_items)
+                  
+                  # Remove duplicates
+                  child_refs = list(set(all_child_refs))
                   
                   if not child_refs:
-                      print(f"  No child references found")
+                      print(f"  No child references found via GitHub native methods")
                       continue
                   
                   relationships_found += len(child_refs)
-                  print(f"  Found {len(child_refs)} child references")
+                  print(f"  Found {len(child_refs)} child references:")
+                  print(f"    - GitHub connections: {len(github_connections)}")
+                  print(f"    - Task list items: {len(task_list_items)}")
                   
                   for child_ref in child_refs:
-                      # Normalize child reference format
-                      if isinstance(child_ref, tuple):
-                          child_repo, child_number = child_ref
+                      # Parse child reference (format: "owner/repo#123")
+                      if '#' in child_ref:
+                          repo_part, number_part = child_ref.split('#', 1)
+                          child_repo = repo_part
+                          try:
+                              child_number = int(number_part)
+                          except ValueError:
+                              print(f"    Invalid issue number in {child_ref}")
+                              continue
                       else:
-                          # Fallback for old format or issues
-                          child_repo = repo_key
-                          child_number = child_ref
+                          print(f"    Invalid child reference format: {child_ref}")
+                          continue
                       
                       print(f"    Checking child: {child_repo}#{child_number}")
                       
@@ -459,10 +574,40 @@ jobs:
           echo "- AquaTechOrg/frontend#789 (another repository)"
           echo "- owner/any-repo#999 (any repository)"
 
+      - name: Provide GitHub native setup instructions
+        run: |
+          echo "=== GITHUB NATIVE SUB-ISSUE SETUP ==="
+          echo ""
+          echo "This workflow uses GitHub's NATIVE sub-issue functionality:"
+          echo ""
+          echo "METHOD 1: Task Lists (Recommended)"
+          echo "1. Edit the parent issue (Issue #1)"
+          echo "2. Add task list items with issue references:"
+          echo "   - [ ] #2 Sub-task description"
+          echo "   - [ ] #3 Another sub-task"
+          echo "   - [x] #4 Completed sub-task"
+          echo "3. GitHub automatically creates relationships"
+          echo ""
+          echo "METHOD 2: Issue Connections (Beta)"
+          echo "1. Go to an issue page"
+          echo "2. Look for 'Development' or 'Sub-issues' section"
+          echo "3. Use 'Connect issue' or 'Add sub-issue' buttons"
+          echo ""
+          echo "METHOD 3: Cross-Repository Task Lists"
+          echo "   - [ ] AquaTechOrg/backend#123 Backend task"
+          echo "   - [ ] AquaTechOrg/frontend#456 Frontend task"
+          echo ""
+          echo "CURRENT SITUATION:"
+          echo "- Issue #1: Has iteration 'Iteration 2'"
+          echo "- Issue #2: No iteration (will inherit)"
+          echo "- Add '- [ ] #2 Sub-task' to Issue #1 description"
+
       - name: Log synchronization results
         run: |
           echo "Iteration synchronization completed at $(date)"
-          echo "Check the logs above to see if any relationships were found and processed."
+          echo "Uses GitHub native sub-issue detection (task lists + issue connections)"
+          echo ""
+          echo "To establish relationships: Add task list items like '- [ ] #2' to parent issues"
           echo ""
           echo "If 'Total updates made: 0', follow the relationship setup instructions above."
 
