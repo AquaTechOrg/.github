@@ -232,6 +232,17 @@ jobs:
           echo "Items with content:"
           jq '[.data.node.items.nodes[] | select(.content != null)] | length' project_items.json
 
+      - name: Debug issue content before analysis
+        env:
+          GH_TOKEN: ${{ secrets.TEST }}
+        run: |
+          echo "=== ISSUE CONTENT DEBUG ==="
+          echo "Issue #1 full content:"
+          gh api repos/AquaTechOrg/.github/issues/1 | jq '{number, title, body}'
+          echo ""
+          echo "Issue #2 full content:"
+          gh api repos/AquaTechOrg/.github/issues/2 | jq '{number, title, body}'
+
       - name: Find parent-child relationships and sync iterations
         env:
           GH_TOKEN: ${{ secrets.TEST }}
@@ -267,26 +278,41 @@ jobs:
                       issue_data = json.loads(result)
                       body = issue_data.get('body', '')
                       
-                      # Parse task list items with issue references
-                      import re
-                      task_pattern = r'- \[[ x]\] .*?(?:^|\s)(?:([a-zA-Z0-9\-_]+)/([a-zA-Z0-9\-_]+))?#(\d+)(?:\s|$)'
-                      matches = re.findall(task_pattern, body, re.MULTILINE | re.IGNORECASE)
+                      print(f"    Analyzing issue body for task lists:")
+                      print(f"    Body content: {repr(body[:200])}...")
                       
-                      for match in matches:
-                          repo_owner_ref, repo_name_ref, issue_num = match
-                          if repo_owner_ref and repo_name_ref:
-                              # Cross-repo reference
-                              task_items.append(f"{repo_owner_ref}/{repo_name_ref}#{issue_num}")
-                          else:
-                              # Same repo reference
-                              task_items.append(f"{repo_owner}/{repo_name}#{issue_num}")
-                          
-                      print(f"    Found {len(task_items)} task list items with issue references")
+                      # Parse task list items with issue references - simplified patterns
+                      import re
+                      
+                      # Pattern 1: - [ ] #123 or - [x] #123 (same repo)
+                      same_repo_pattern = r'- \[[ x]\] [^#]*#(\d+)'
+                      same_repo_matches = re.findall(same_repo_pattern, body, re.MULTILINE | re.IGNORECASE)
+                      print(f"    Same repo pattern matches: {same_repo_matches}")
+                      
+                      for issue_num in same_repo_matches:
+                          task_items.append(f"{repo_owner}/{repo_name}#{issue_num}")
+                          print(f"      → Same repo task: {repo_owner}/{repo_name}#{issue_num}")
+                      
+                      # Pattern 2: - [ ] owner/repo#123 (cross repo)
+                      cross_repo_pattern = r'- \[[ x]\] [^#]*([a-zA-Z0-9\-_]+/[a-zA-Z0-9\-_]+)#(\d+)'
+                      cross_repo_matches = re.findall(cross_repo_pattern, body, re.MULTILINE | re.IGNORECASE)
+                      print(f"    Cross repo pattern matches: {cross_repo_matches}")
+                      
+                      for repo_ref, issue_num in cross_repo_matches:
+                          task_items.append(f"{repo_ref}#{issue_num}")
+                          print(f"      → Cross repo task: {repo_ref}#{issue_num}")
+                      
+                      # Remove duplicates
+                      task_items = list(set(task_items))
+                      
+                      print(f"    Total unique task list items: {len(task_items)}")
                       for item in task_items:
-                          print(f"      Task item: {item}")
+                          print(f"      Final task item: {item}")
                           
               except Exception as e:
                   print(f"    Error parsing task list for {repo_owner}/{repo_name}#{issue_number}: {e}")
+                  import traceback
+                  traceback.print_exc()
               
               return task_items
 
