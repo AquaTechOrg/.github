@@ -227,8 +227,8 @@ jobs:
           echo "=== PROJECT DATA DEBUG ==="
           echo "Project items structure:"
           jq '.data.node.items.nodes | length' project_items.json
-          echo "First item:"
-          jq '.data.node.items.nodes[0]' project_items.json
+          echo "Second item:"
+          jq '.data.node.items.nodes[1]' project_items.json
           echo "Items with content:"
           jq '[.data.node.items.nodes[] | select(.content != null)] | length' project_items.json
 
