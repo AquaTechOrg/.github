@@ -345,28 +345,29 @@ jobs:
               """Use GraphQL API to retrieve issues tracked BY this issue (children)."""
               tracked = []
               try:
-                  query = f'''
-                  query {
-                    repository(owner: "{repo_owner}", name: "{repo_name}") {
-                      issue(number: {issue_number}) {
-                        trackedIssues(first: 100) {
-                          nodes {
+                  # Build GraphQL query with escaped braces to avoid f-string parsing issues
+                  query = '''
+                  query {{
+                    repository(owner: "{repo_owner}", name: "{repo_name}") {{
+                      issue(number: {issue_number}) {{
+                        trackedIssues(first: 100) {{
+                          nodes {{
                             number
                             title
-                            repository { owner { login } name }
-                          }
-                        }
-                        tracks(first: 100) {
-                          nodes {
+                            repository {{ owner {{ login }} name }}
+                          }}
+                        }}
+                        tracks(first: 100) {{
+                          nodes {{
                             number
                             title
-                            repository { owner { login } name }
-                          }
-                        }
-                      }
-                    }
-                  }
-                  '''
+                            repository {{ owner {{ login }} name }}
+                          }}
+                        }}
+                      }}
+                    }}
+                  }}
+                  '''.format(repo_owner=repo_owner, repo_name=repo_name, issue_number=issue_number)
                   cmd = f"gh api graphql -f query='{query}'"
                   result = run_gh_command(cmd)
                   if result:
