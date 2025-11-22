@@ -320,25 +320,22 @@ jobs:
               """Get GitHub native issue connections using timeline API"""
               connections = []
               try:
-                  # Get issue timeline to find connected/disconnected events
+                # Get issue timeline to find connected/disconnected events
                 # Include preview headers in case sub-issue events require them
                 cmd = f'gh api repos/{repo_owner}/{repo_name}/issues/{issue_number}/timeline -H "Accept: application/vnd.github+json"'
-                  result = run_gh_command(cmd)
-                  if result:
-                      timeline = json.loads(result)
-                      
-                      for event in timeline:
-                          if event.get('event') == 'connected':
-                              if 'subject' in event and event['subject'].get('type') == 'issue':
-                                  subject = event['subject']
-                                  conn_repo = subject.get('repository', {}).get('full_name', f"{repo_owner}/{repo_name}")
-                                  conn_number = subject.get('number')
-                                  if conn_repo and conn_number:
-                                      connections.append(f"{conn_repo}#{conn_number}")
-                                      print(f"    GitHub connection: {conn_repo}#{conn_number}")
-                      
-                      print(f"    Found {len(connections)} GitHub native connections")
-                      
+                result = run_gh_command(cmd)
+                if result:
+                  timeline = json.loads(result)
+                  for event in timeline:
+                    if event.get('event') == 'connected':
+                      if 'subject' in event and event['subject'].get('type') == 'issue':
+                        subject = event['subject']
+                        conn_repo = subject.get('repository', {}).get('full_name', f"{repo_owner}/{repo_name}")
+                        conn_number = subject.get('number')
+                        if conn_repo and conn_number:
+                          connections.append(f"{conn_repo}#{conn_number}")
+                          print(f"    GitHub connection: {conn_repo}#{conn_number}")
+                  print(f"    Found {len(connections)} GitHub native connections")
               except Exception as e:
                   print(f"    Error getting connections for {repo_owner}/{repo_name}#{issue_number}: {e}")
               
