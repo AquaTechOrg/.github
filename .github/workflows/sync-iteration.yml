@@ -109,8 +109,19 @@ jobs:
 
           echo "Total items collected: $(jq '.data.organization.projectV2.items.nodes | length' project.json)"
 
-          echo "PROJECT_ID=$(jq -r '.data.organization.projectV2.id' project.json)" >> $GITHUB_ENV
-          echo "ITERATION_FIELD_ID=$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name==\"Iteration\") | .id' project.json)" >> $GITHUB_ENV
+          PROJECT_ID=$(jq -r '.data.organization.projectV2.id' project.json)
+          ITERATION_FIELD_ID=$(jq -r '.data.organization.projectV2.fields.nodes
+            | map(select(.name=="Iteration")) | .[0].id // empty' project.json)
+
+          if [ -z "$ITERATION_FIELD_ID" ] || [ "$ITERATION_FIELD_ID" = "null" ]; then
+            echo "No Iteration field found in project. Exiting."
+            exit 0
+          fi
+
+          {
+            echo "PROJECT_ID=$PROJECT_ID"
+            echo "ITERATION_FIELD_ID=$ITERATION_FIELD_ID"
+          } >> "$GITHUB_ENV"
       - name: Sync iterations
         env:
           GH_TOKEN: ${{ secrets.TEST }}
