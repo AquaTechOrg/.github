@@ -1,6 +1,5 @@
 name: "Release 📦"
 description: "צ'קליסט לתכנון והוצאה של גרסה חדשה לפרודקשן"
-title: "Release v"
 type: "Release 📦"
 
 body:
