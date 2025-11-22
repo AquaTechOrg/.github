@@ -62,7 +62,7 @@ jobs:
           echo 'PROJECT_ID='$(jq -r '.data.organization.projectV2.id' project_data.json) >> $GITHUB_ENV
           echo 'ITERATION_FIELD_ID='$(jq -r '.data.organization.projectV2.fields.nodes[] | select(.name== "Iteration") | .id' project_data.json) >> $GITHUB_ENV
 
-      - name: Get all project items with iterations and relationships
+      - name: Get all project items with iterations
         env:
           GH_TOKEN: ${{ secrets.TEST }}
         run: |
@@ -84,30 +84,6 @@ jobs:
                             name
                             owner {
                               login
-                            }
-                          }
-                          trackedIssues(first: 20) {
-                            nodes {
-                              number
-                              title
-                              repository {
-                                name
-                                owner {
-                                  login
-                                }
-                              }
-                            }
-                          }
-                          trackingIssues(first: 20) {
-                            nodes {
-                              number
-                              title
-                              repository {
-                                name
-                                owner {
-                                  login
-                                }
-                              }
                             }
                           }
                         }
@@ -132,23 +108,20 @@ jobs:
               }
             }' -f projectId=$PROJECT_ID > project_items.json
 
-      - name: Discover organization repositories and issues
+      - name: Analyze project content
         env:
           GH_TOKEN: ${{ secrets.TEST }}
         run: |
-          echo "=== ORGANIZATION-WIDE DISCOVERY ==="
-          echo "Finding all repositories in AquaTechOrg with issues in the project..."
-          
-          # Get all repositories in the organization
-          echo "Repositories in organization:"
-          gh repo list AquaTechOrg --limit 100 --json name,owner,isPrivate | jq -r '.[] | "\(.owner.login)/\(.name)"'
+          echo "=== PROJECT CONTENT ANALYSIS ==="
+          echo "Issues in Project #6 by repository:"
+          jq -r '.data.node.items.nodes[].content | select(.repository != null) | "\(.repository.owner.login)/\(.repository.name)#\(.number): \(.title)"' project_items.json | sort || echo "No issues found in project"
           
           echo ""
-          echo "=== SAMPLE ISSUE CONTENT FROM PROJECT ==="
-          # The project items will contain issues from various repos
-          # We'll analyze them in the Python script, but let's show what we have
-          echo "Project items by repository:"
-          jq -r '.data.node.items.nodes[].content | select(.repository != null) | "\(.repository.owner.login)/\(.repository.name)#\(.number): \(.title)"' project_items.json | sort
+          echo "Total issues in project:"
+          jq '.data.node.items.nodes | length' project_items.json
+          
+          echo "Issues with content:"
+          jq '[.data.node.items.nodes[] | select(.content != null)] | length' project_items.json
 
       - name: Debug project data
         run: |
@@ -182,27 +155,7 @@ jobs:
                   print(f"Error: {e.stderr}")
                   return None
 
-          def get_tracked_issues(issue_content):
-              """Get GitHub-tracked issues (sub-issues)"""
-              tracked_issues = []
-              if issue_content and 'trackedIssues' in issue_content:
-                  for tracked in issue_content['trackedIssues']['nodes']:
-                      repo = tracked['repository']
-                      repo_key = f"{repo['owner']['login']}/{repo['name']}"
-                      tracked_issues.append((repo_key, tracked['number']))
-                      print(f"      GitHub tracked issue: {repo_key}#{tracked['number']}")
-              return tracked_issues
 
-          def get_tracking_issues(issue_content):
-              """Get GitHub-tracking issues (parent issues)"""
-              tracking_issues = []
-              if issue_content and 'trackingIssues' in issue_content:
-                  for tracking in issue_content['trackingIssues']['nodes']:
-                      repo = tracking['repository']
-                      repo_key = f"{repo['owner']['login']}/{repo['name']}"
-                      tracking_issues.append((repo_key, tracking['number']))
-                      print(f"      GitHub tracking issue: {repo_key}#{tracking['number']}")
-              return tracking_issues
 
           def extract_issue_references(body, title="", current_repo=""):
               """Extract issue references from issue body and title"""
@@ -387,53 +340,22 @@ jobs:
                   potential_parents += 1
                   print(f"  Parent iteration: {parent_iteration.get('title')}")
                   
-                  # Get GitHub native tracked issues (sub-issues)
-                  print(f"  Checking GitHub tracked issues...")
-                  tracked_refs = get_tracked_issues(content)
-                  
                   # Find child issues referenced in the body and title
                   print(f"  Checking text-based references...")
-                  text_refs = extract_issue_references(
+                  child_refs = extract_issue_references(
                       content.get('body', ''), 
                       content.get('title', ''),
                       repo_key  # Pass current repo for same-repo references
                   )
                   
-                  # Combine both types of references
-                  all_child_refs = []
-                  
-                  # Add tracked issues (GitHub native)
-                  for tracked_ref in tracked_refs:
-                      if isinstance(tracked_ref, tuple):
-                          all_child_refs.append(tracked_ref)
-                      else:
-                          all_child_refs.append(tracked_ref)
-                  
-                  # Add text references
-                  for text_ref in text_refs:
-                      if isinstance(text_ref, tuple):
-                          all_child_refs.append(text_ref)
-                      else:
-                          all_child_refs.append(text_ref)
-                  
-                  # Remove duplicates
-                  unique_child_refs = []
-                  seen = set()
-                  for ref in all_child_refs:
-                      if ref not in seen:
-                          unique_child_refs.append(ref)
-                          seen.add(ref)
-                  
-                  if not unique_child_refs:
-                      print(f"  No child references found (neither tracked nor text-based)")
+                  if not child_refs:
+                      print(f"  No child references found")
                       continue
                   
-                  relationships_found += len(unique_child_refs)
-                  print(f"  Found {len(unique_child_refs)} total child references")
-                  print(f"    - GitHub tracked: {len(tracked_refs)}")
-                  print(f"    - Text-based: {len(text_refs)}")
+                  relationships_found += len(child_refs)
+                  print(f"  Found {len(child_refs)} child references")
                   
-                  for child_ref in unique_child_refs:
+                  for child_ref in child_refs:
                       # Normalize child reference format
                       if isinstance(child_ref, tuple):
                           child_repo, child_number = child_ref
