@@ -130,32 +130,60 @@ jobs:
                   print(f"Error: {e.stderr}")
                   return None
 
-          def extract_issue_references(body):
-              """Extract issue references from issue body (e.g., #123, owner/repo#456)"""
+          def extract_issue_references(body, title=""):
+              """Extract issue references from issue body and title"""
               if not body:
-                  return []
+                  body = ""
+              if not title:
+                  title = ""
               
-              # Pattern to match issue references
+              full_text = f"{title}\n{body}".lower()
+              
+              # Enhanced patterns to match various issue reference formats
               patterns = [
+                  r'(?:closes?|fixes?|resolves?)\s+#(\d+)',  # closes #123
+                  r'(?:closes?|fixes?|resolves?)\s+(\w+/\w+)#(\d+)',  # closes owner/repo#123
                   r'#(\d+)',  # #123
                   r'(\w+/\w+)#(\d+)',  # owner/repo#123
-                  r'- \[ \] #(\d+)',  # - [ ] #123 (task list format)
-                  r'- \[x\] #(\d+)',  # - [x] #123 (completed task)
+                  r'- \[ \] .*#(\d+)',  # - [ ] task #123
+                  r'- \[x\] .*#(\d+)',  # - [x] completed #123
+                  r'- \[[xX]\] .*#(\d+)',  # - [X] completed #123
+                  r'(?:sub-?issue|child|task).*#(\d+)',  # sub-issue #123
+                  r'(?:parent|related).*#(\d+)',  # parent #123
               ]
               
               references = []
-              for pattern in patterns:
-                  matches = re.findall(pattern, body)
+              print(f"  Analyzing text: {full_text[:200]}...")
+              
+              for i, pattern in enumerate(patterns):
+                  matches = re.findall(pattern, full_text, re.IGNORECASE | re.MULTILINE)
+                  print(f"    Pattern {i+1} '{pattern}' found {len(matches)} matches")
+                  
                   for match in matches:
                       if isinstance(match, tuple):
-                          if len(match) == 2:  # repo/owner format
+                          if len(match) == 3 and match[1]:  # closes owner/repo#123 format
+                              references.append((match[1], int(match[2])))
+                              print(f"      Found cross-repo reference: {match[1]}#{match[2]}")
+                          elif len(match) == 2:  # owner/repo#123 format
                               references.append((match[0], int(match[1])))
-                          else:
-                              references.append(int(match))
+                              print(f"      Found cross-repo reference: {match[0]}#{match[1]}")
+                          elif len(match) == 1:  # #123 format from complex pattern
+                              references.append(int(match[0]))
+                              print(f"      Found same-repo reference: #{match[0]}")
                       else:
                           references.append(int(match))
+                          print(f"      Found same-repo reference: #{match}")
               
-              return references
+              # Remove duplicates while preserving order
+              unique_refs = []
+              seen = set()
+              for ref in references:
+                  if ref not in seen:
+                      unique_refs.append(ref)
+                      seen.add(ref)
+              
+              print(f"  Total unique references found: {len(unique_refs)}")
+              return unique_refs
 
           def get_iteration_for_item(item):
               """Get the current iteration for a project item"""
