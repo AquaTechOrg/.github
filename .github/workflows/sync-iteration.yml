@@ -129,18 +129,59 @@ jobs:
           python3 - <<'PY'
           import json, os, subprocess
 
-          def sh_json(endpoint):
-              cmd=f"{endpoint} -H 'Accept: application/vnd.github+json'"
+          def run(cmd):
               r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-              if r.returncode != 0:
-                  print(f"[REST] {endpoint} -> {r.stderr.strip()}")
-                  return None
-              out=r.stdout.strip()
+              if r.returncode!=0:
+                  return None, r.stderr.strip()
+              return r.stdout.strip(), None
+
+          def get_rest_sub_issues(owner, repo, num):
+              cmd=f"gh api repos/{owner}/{repo}/issues/{num}/sub-issues -H 'Accept: application/vnd.github+json'"
+              out, err = run(cmd)
+              if err:
+                  if "Not Found" in err:
+                      print(f"[REST] 404 sub-issues for {owner}/{repo}#{num} (feature off or no access) -> fallback GraphQL")
+                      return None, True  # trigger fallback
+                  print(f"[REST] error {owner}/{repo}#{num}: {err}")
+                  return [], False
+              if not out:
+                  return [], False
               try:
-                  return json.loads(out) if out else None
+                  data=json.loads(out)
+                  if isinstance(data,list):
+                      return data, False
+                  print(f"[REST] unexpected payload (not list) for {owner}/{repo}#{num}")
+                  return [], False
               except json.JSONDecodeError:
-                  print(f"[REST] Non-JSON response for {endpoint}: {out[:120]}")
-                  return None
+                  print(f"[REST] decode error for {owner}/{repo}#{num}")
+                  return [], False
+
+          def get_graphql_tracked(owner, repo, num):
+              q="""
+              query($owner:String!,$repo:String!,$num:Int!){
+                repository(owner:$owner,name:$repo){
+                  issue(number:$num){
+                    trackedIssues(first:100){
+                      nodes{
+                        number
+                        repository{ owner{ login } name }
+                      }
+                    }
+                  }
+                }
+              }"""
+              cmd=f"gh api graphql -f query='{q}' -f owner={owner} -f repo={repo} -F num={num}"
+              out, err = run(cmd)
+              if err:
+                  print(f"[GraphQL] trackedIssues error {owner}/{repo}#{num}: {err}")
+                  return []
+              try:
+                  data=json.loads(out)
+                  nodes=data.get('data',{}).get('repository',{}).get('issue',{}).get('trackedIssues',{}).get('nodes',[])
+                  return nodes or []
+              except Exception as e:
+                  print(f"[GraphQL] parse fail {owner}/{repo}#{num}: {e}")
+                  return []
 
           with open('project.json') as f:
               data=json.load(f)
@@ -148,12 +189,13 @@ jobs:
           project_id=os.environ['PROJECT_ID']
           iter_field=os.environ['ITERATION_FIELD_ID']
 
+          # Build issue map
           issues={}
           for n in proj['items']['nodes']:
               c=n.get('content')
               if not c: continue
               repo=f"{c['repository']['owner']['login']}/{c['repository']['name']}"
-              issues.setdefault(repo, {})[c['number']]={'item_id':n['id'],'iteration':None}
+              issues.setdefault(repo,{})[c['number']]={'item_id':n['id'],'iteration':None}
               for fv in n.get('fieldValues',{}).get('nodes',[]):
                   if fv.get('iterationId'):
                       issues[repo][c['number']]['iteration']={'id':fv['iterationId'],'title':fv.get('title')}
@@ -165,29 +207,32 @@ jobs:
               targeted=(ev['repository']['full_name'], ev['issue']['number'])
 
           parents=[]
+            # select parent candidates (have iteration)
           for repo, nums in issues.items():
               for num, meta in nums.items():
                   it=meta['iteration']
                   if not it: continue
-                  if targeted and (repo, num) != targeted:
-                      continue
+                  if targeted and (repo, num)!=targeted: continue
                   parents.append((repo,num,it))
 
           updates=0
           for repo,num,it in parents:
-              owner,name=repo.split('/',1)
-              endpoint=f"gh api repos/{owner}/{name}/issues/{num}/sub-issues"
-              data_list=sh_json(endpoint)
-              if data_list is None:
+              owner, name = repo.split('/',1)
+              rest_children, fallback = get_rest_sub_issues(owner, name, num)
+              children=[]
+              if fallback:  # use GraphQL trackedIssues
+                  gql_children=get_graphql_tracked(owner, name, num)
+                  for ch in gql_children:
+                      children.append({
+                          'repository': {'owner': {'login': ch['repository']['owner']['login']},
+                                         'name': ch['repository']['name']},
+                          'number': ch['number']
+                      })
+              else:
+                  children=rest_children or []
+              if not children:
                   continue
-              if not isinstance(data_list, list):
-                  print(f"[REST] Unexpected payload (not list) for {repo}#{num}: {data_list}")
-                  continue
-              if not data_list:
-                  continue
-              for ch in data_list:
-                  # Guard keys
-                  if not isinstance(ch, dict): continue
+              for ch in children:
                   try:
                       child_repo=f"{ch['repository']['owner']['login']}/{ch['repository']['name']}"
                       child_num=ch['number']
@@ -197,7 +242,7 @@ jobs:
                       child_meta=issues[child_repo][child_num]
                       child_iter=child_meta['iteration']
                       if not child_iter or child_iter['id']!=it['id']:
-                          mutation='''
+                          mutation="""
                           mutation($p:ID!,$i:ID!,$f:ID!,$val:ID!){
                             updateProjectV2ItemFieldValue(input:{
                               projectId:$p
@@ -205,17 +250,14 @@ jobs:
                               fieldId:$f
                               value:{ iterationId:$val }
                             }){ projectV2Item { id } }
-                          }'''
+                          }"""
                           item_id=child_meta['item_id']
-                          r=subprocess.run(
-                              f"gh api graphql -f query='{mutation}' -f p={project_id} -f i={item_id} -f f={iter_field} -f val={it['id']}",
-                              shell=True, capture_output=True, text=True
-                          )
-                          if r.returncode==0:
+                          out, err = run(f"gh api graphql -f query='{mutation}' -f p={project_id} -f i={item_id} -f f={iter_field} -f val={it['id']}")
+                          if err:
+                              print(f"Failed update {child_repo}#{child_num}: {err}")
+                          else:
                               print(f"Updated {child_repo}#{child_num} -> {it['title']}")
                               updates+=1
-                          else:
-                              print(f"Failed update {child_repo}#{child_num}: {r.stderr.strip()}")
           print(f"Total parents scanned: {len(parents)}")
           print(f"Iteration updates applied: {updates}")
           PY
