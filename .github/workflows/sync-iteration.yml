@@ -4,8 +4,6 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
-  issues:
-    types: [edited]
 concurrency:
   group: sub-issue-iteration-sync
   cancel-in-progress: true
@@ -17,7 +15,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.TEST }}
           ORG: AquaTechOrg
-          PROJECT_NUMBER: 6
+          PROJECT_NUMBER: 2
         run: |
           # First page (includes fields)
           gh api graphql -f query='
