@@ -1,0 +1,39 @@
+name: "Technical User Story ⚒️"
+description: "טופס ליצירת סיפור משתמש טכני - שיפורים טכניים, ריפקטורינג, או חובות טכניים"
+type: Technical Story ⚒️
+
+body:
+  - type: textarea
+    id: technical_story
+    attributes:
+      label: "הסיפור הטכני"
+      description: "תאר את הצורך הטכני בפורמט: כ[מפתח/מערכת], אני רוצה [מה], כדי ש[מדוע]"
+      placeholder: "כמפתח, אני רוצה לרפקטר את שכבת הנתונים, כדי שהקוד יהיה יותר נקי וניתן לתחזוקה"
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical_requirements
+    attributes:
+      label: "דרישות טכניות"
+      description: "פרט את הדרישות הטכניות והשינויים הנדרשים"
+      placeholder: |
+        - העבר ל-TypeScript
+        - הוסף unit tests
+        - שפר את זמני התגובה ב-50%
+        - הוסף logging מתאים
+    validations:
+      required: false
+
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: "הגדרת סיום (Definition of Done)"
+      description: "מה צריך להתקיים כדי שהמשימה הטכנית תיחשב מושלמת"
+      placeholder: |
+        - הקוד עבר code review
+        - כל הבדיקות עוברות
+        - התיעוד עודכן
+        - אין regression בפונקציונליות קיימת
+    validations:
+      required: false
