@@ -1,0 +1,17 @@
+name: "Acceptance Test Fixes 🧪🔧"
+description: "תיקונים ושינויים שהתגלו בבדיקות קבלה הנדרשים לסיום הגרסה"
+type: "Acceptance Test Fixes 🧪🔧"
+
+body:
+  - type: textarea
+    id: acceptance_findings
+    attributes:
+      label: "ממצאים בבדיקות קבלה"
+      description: "מה התגלה בבדיקות הקבלה שדורש תיקון לפני השחרור"
+      placeholder: |
+        - הפיצ'ר החדש לא עובד בדפדפן Safari
+        - זמני טעינה איטיים מדי בסביבת ייצור
+        - הודעת שגיאה לא ברורה למשתמש הקצה
+        - חסר validation בטופס החדש
+    validations:
+      required: false
