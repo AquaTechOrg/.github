@@ -12,18 +12,6 @@ body:
     validations:
       required: false
 
-  - type: textarea
-    id: acceptance_criteria
-    attributes:
-      label: "קריטריוני קבלה"
-      description: "מה צריך להתקיים כדי שהסיפור ייחשב הושלם"
-      placeholder: |
-        - המשתמש יכול ללחוץ על כפתור "שמור למועדפים"
-        - הפוסט מופיע ברשימת המועדפים
-        - המשתמש יכול להסיר פוסט מהמועדפים
-    validations:
-      required: false
-
   - type: input
     id: specification_link
     attributes:

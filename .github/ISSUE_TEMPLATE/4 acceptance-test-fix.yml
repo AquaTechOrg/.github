@@ -15,3 +15,11 @@ body:
         - חסר validation בטופס החדש
     validations:
       required: false
+  - type: input
+    id: specification_link
+    attributes:
+      label: "קישור למסמך אפיון / מסמך עיצוב"
+      description: "אם יש מסמך שמסביר איך התכונה אמורה לעבוד, הכנס כאן את הקישור"
+      placeholder: "https://…"
+    validations:
+      required: false

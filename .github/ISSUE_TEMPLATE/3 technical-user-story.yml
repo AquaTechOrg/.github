@@ -11,29 +11,3 @@ body:
       placeholder: "כמפתח, אני רוצה לרפקטר את שכבת הנתונים, כדי שהקוד יהיה יותר נקי וניתן לתחזוקה"
     validations:
       required: false
-
-  - type: textarea
-    id: technical_requirements
-    attributes:
-      label: "דרישות טכניות"
-      description: "פרט את הדרישות הטכניות והשינויים הנדרשים"
-      placeholder: |
-        - העבר ל-TypeScript
-        - הוסף unit tests
-        - שפר את זמני התגובה ב-50%
-        - הוסף logging מתאים
-    validations:
-      required: false
-
-  - type: textarea
-    id: definition_of_done
-    attributes:
-      label: "הגדרת סיום (Definition of Done)"
-      description: "מה צריך להתקיים כדי שהמשימה הטכנית תיחשב מושלמת"
-      placeholder: |
-        - הקוד עבר code review
-        - כל הבדיקות עוברות
-        - התיעוד עודכן
-        - אין regression בפונקציונליות קיימת
-    validations:
-      required: false
