@@ -1,6 +1,6 @@
-name: "Acceptance Test Fixes 🧪🔧"
+name: "Acceptance Story 🔧"
 description: "תיקונים ושינויים שהתגלו בבדיקות קבלה הנדרשים לסיום הגרסה"
-type: "Acceptance Test Fixes 🧪🔧"
+type: "Acceptance Story 🔧"
 
 body:
   - type: textarea
