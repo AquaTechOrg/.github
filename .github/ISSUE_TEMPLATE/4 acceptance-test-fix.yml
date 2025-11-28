@@ -8,7 +8,7 @@ body:
     attributes:
       label: "ממצאים בבדיקות קבלה"
       description: "מה התגלה בבדיקות הקבלה שדורש תיקון לפני השחרור"
-      placeholder: |
+      value: |
         <div dir="rtl">
           - הפיצ'ר החדש לא עובד בדפדפן Safari
           - זמני טעינה איטיים מדי בסביבת ייצור
