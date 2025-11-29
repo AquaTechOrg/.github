@@ -11,38 +11,26 @@ body:
         <div dir="rtl">
         מהי השאלה העיקרית שהספייק הזה בא לענות עליה?
         </div>
-      placeholder: |
+
+      placeholder: "לדוגמה: האם כדאי להשתמש ב-GraphQL במקום REST API לפרויקט החדש שלנו?"
+      value: |
         <div dir="rtl">
-        לדוגמה: מהי הדרך הטובה ביותר ליישם חיפוש בזמן אמת? האם כדאי להשתמש בספרייה X או Y?
+        
+    
+
         </div>
     validations:
       required: false
 
-  - type: textarea
-    id: investigation_plan
-    attributes:
-      label: "תוכנית החקר"
-      description: "מהם השלבים או הנושאים שיש לחקור כדי לענות על השאלה?"
-      placeholder: |
-        - מחקר על ספריות A, B, C.
-        - בניית Proof of Concept (POC) קטן עם הפתרון המועדף.
-        - סיכום יתרונות וחסרונות של כל גישה.
-    validations:
-      required: false
 
   - type: textarea
     id: outcome
     attributes:
       label: "תוצאה רצויה"
-      description: "מה התוצר הסופי של הספייק? מה יעזור לנו לקבל החלטה?"
+      description: |
+        <div dir="rtl">
+        מה התוצר הסופי של הספייק? מה יעזור לנו לקבל החלטה?
+        </div>
       placeholder: "לדוגמה: מסמך סיכום עם המלצה מנומקת, דוגמת קוד עובדת, דיאגרמת ארכיטקטורה."
-    validations:
-      required: false
-
-  - type: textarea
-    id: findings
-    attributes:
-      label: "ממצאים (ימולא בסיום)"
-      description: "בסיום הספייק, יש לסכם כאן את הממצאים, המסקנות, וההמלצה להמשך."
     validations:
       required: false
