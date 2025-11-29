@@ -7,13 +7,14 @@ body:
     id: acceptance_findings
     attributes:
       label: "ממצאים בבדיקות קבלה"
-      description: "מה התגלה בבדיקות הקבלה שדורש תיקון לפני השחרור"
-      value: |
+      description: |
         <div dir="rtl">
-          - הפיצ'ר החדש לא עובד בדפדפן Safari
-          - זמני טעינה איטיים מדי בסביבת ייצור
-          - הודעת שגיאה לא ברורה למשתמש הקצה
-          - חסר validation בטופס החדש
+        "מה התגלה בבדיקות הקבלה שדורש תיקון לפני השחרור"
+        </div>
+      value: |
+        <div dir="auto">
+
+
         </div>
     validations:
       required: false
@@ -21,7 +22,10 @@ body:
     id: specification_link
     attributes:
       label: "קישור למסמך אפיון / מסמך עיצוב"
-      description: "אם יש מסמך שמסביר איך התכונה אמורה לעבוד, הכנס כאן את הקישור"
+      description: |
+        <div dir="rtl">
+        "אם יש מסמך שמסביר איך התכונה אמורה לעבוד, הכנס כאן את הקישור"
+        </div>
       placeholder: "https://…"
     validations:
       required: false

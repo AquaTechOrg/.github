@@ -7,7 +7,14 @@ body:
     id: summary
     attributes:
       label: "מה הבעיה?"
-      placeholder: "לדוגמה: כפתור השמירה לא עובד"
+      description: |
+        <div dir="rtl">
+        "לדוגמה: כפתור השמירה לא עובד"
+        </div>
+      value: |
+        <div dir="auto">
+        
+        </div>
     validations:
       required: false
 
@@ -15,6 +22,13 @@ body:
     id: screenshots
     attributes:
       label: "צילומי מסך"
-      description: "לא חובה - אפשר לצרף כדי להבין טוב יותר"
+      description: |
+        <div dir="rtl">
+        "לא חובה - אפשר לצרף כדי להבין טוב יותר"
+        </div>
+      value: |
+        <div dir="auto">
+        
+        </div>
     validations:
       required: false

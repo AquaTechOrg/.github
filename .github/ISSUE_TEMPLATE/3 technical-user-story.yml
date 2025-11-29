@@ -7,7 +7,14 @@ body:
     id: technical_story
     attributes:
       label: "הסיפור הטכני"
-      description: "תאר את הצורך הטכני בפורמט: כ[מפתח/מערכת], אני רוצה [מה], כדי ש[מדוע]"
-      placeholder: "כמפתח, אני רוצה לרפקטר את שכבת הנתונים, כדי שהקוד יהיה יותר נקי וניתן לתחזוקה"
+      description: |
+        <div dir="rtl">
+        "תאר את הצורך הטכני בפורמט: כ[מפתח/מערכת], אני רוצה [מה], כדי ש[מדוע]"
+        </div>
+      value: |
+        <div dir="auto">
+        
+        
+        </div>
     validations:
       required: false

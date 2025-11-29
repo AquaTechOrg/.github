@@ -7,7 +7,14 @@ body:
     id: training_topic
     attributes:
       label: "נושא ההדרכה"
-      description: "מהו הנושא המרכזי של ההדרכה?"
-      placeholder: "לדוגמה: שימוש ב-GitHub Actions, עקרונות SOLID, היכרות עם המערכת החדשה"
-    validations:
+      description: |
+        <div dir="rtl">
+        "מהו הנושא המרכזי של ההדרכה?"
+        </div>
+      value: |
+        <div dir="auto">
+
+
+        
+        </div>
       required: false

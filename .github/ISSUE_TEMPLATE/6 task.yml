@@ -7,7 +7,14 @@ body:
     id: task_description
     attributes:
       label: "תיאור המשימה"
-      description: "תאר בפירוט מה צריך לעשות, כולל רקע טכני אם נדרש."
-      placeholder: "לדוגמה: שדרוג ספריית React לגרסה 18, יצירת אינדקס חדש במסד הנתונים..."
+      description: |
+        <div dir="rtl">
+        "תאר בפירוט מה צריך לעשות, כולל רקע טכני אם נדרש."
+        </div>
+      value: |
+        <div dir="auto">
+        
+        
+        </div>
     validations:
       required: false

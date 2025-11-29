@@ -7,8 +7,15 @@ body:
     id: user_story
     attributes:
       label: "הסיפור"
-      description: "תאר את הסיפור בפורמט: כ[סוג משתמש], אני רוצה [מה], כדי ש[מדוע]"
-      placeholder: "כמשתמש רגיל, אני רוצה לשמור פוסטים למועדפים, כדי שאוכל לחזור אליהם מאוחר יותר"
+      description: |
+        <div dir="rtl">
+        "תאר את הסיפור בפורמט: כ[סוג משתמש], אני רוצה [מה], כדי ש[מדוע]"
+        </div>
+      value: |
+        <div dir="auto">
+        
+        
+        </div>
     validations:
       required: false
 
@@ -16,7 +23,10 @@ body:
     id: specification_link
     attributes:
       label: "קישור למסמך אפיון / מסמך עיצוב"
-      description: "אם יש מסמך שמסביר איך התכונה אמורה לעבוד, הכנס כאן את הקישור"
+      description: |
+        <div dir="rtl">
+        "אם יש מסמך שמסביר איך התכונה אמורה לעבוד, הכנס כאן את הקישור"
+        </div>
       placeholder: "https://…"
     validations:
       required: false

@@ -7,8 +7,15 @@ body:
     id: epic_description
     attributes:
       label: "תיאור האפיק"
-      description: "תיאור מפורט של היעד והערך שהאפיק מביא"
-      placeholder: "תאר מה האפיק כולל, מדוע הוא חשוב ומה הערך העסקי שלו"
+      description: |
+        <div dir="rtl">
+        "תיאור מפורט של היעד והערך שהאפיק מביא"
+        </div>
+      value: |
+        <div dir="auto">
+        
+        
+        </div>
     validations:
       required: false
 
@@ -16,10 +23,14 @@ body:
     id: acceptance_criteria
     attributes:
       label: "קריטריונים להשלמה"
-      description: "מה צריך להתקיים כדי לסמן את האפיק כהושלם"
-      placeholder: |
-        - כל התכונות הבסיסיות מיושמות
-        - בדיקות עברו בהצלחה
-        - תיעוד הושלם
+      description: |
+        <div dir="rtl">
+        "מה צריך להתקיים כדי לסמן את האפיק כהושלם"
+        </div>
+      value: |
+        <div dir="auto">
+
+
+        </div>
     validations:
       required: false

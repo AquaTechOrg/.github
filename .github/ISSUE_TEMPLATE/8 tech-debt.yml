@@ -7,8 +7,15 @@ body:
     id: debt_description
     attributes:
       label: "תיאור החוב הטכני"
-      description: "תאר את החוב הטכני, היכן הוא נמצא בקוד, ומדוע הוא נוצר."
-      placeholder: "לדוגמה: שימוש בספרייה מיושנת, קוד משוכפל, חוסר בבדיקות יחידה..."
+      description: |
+        <div dir="rtl">
+        "תאר את החוב הטכני, היכן הוא נמצא בקוד, ומדוע הוא נוצר."
+        </div>
+      value: |
+        <div dir="auto">
+        
+    
+        </div>
     validations:
       required: false
 
@@ -16,17 +23,14 @@ body:
     id: proposed_solution
     attributes:
       label: "פתרון מוצע"
-      description: "תאר את הדרך המומלצת לטפל בחוב הטכני."
-      placeholder: "לדוגמה: לבצע Refactor לקומפוננטה X, לשדרג את ספרייה Y, לכתוב בדיקות..."
-    validations:
-      required: false
-
-
-  - type: textarea
-    id: impact
-    attributes:
-      label: "סיכונים"
-      description: "מהי ההשפעה של השארת החוב כפי שהוא? מה הסיכון בלבצע את השינוי? (לדוגמה: האטה בפיתוח, סיכון לבאגים, קושי בתחזוקה)"
-      placeholder: "כל שינוי באזור הזה לוקח פי 2 יותר זמן, יש סיכון גבוה לרגרסיה..."
+      description: |
+        <div dir="rtl">
+        "תאר את הדרך המומלצת לטפל בחוב הטכני."
+        </div>
+      value: |
+        <div dir="auto">
+        
+        
+        </div>
     validations:
       required: false
