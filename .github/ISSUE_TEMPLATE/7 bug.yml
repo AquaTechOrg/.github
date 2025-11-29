@@ -9,7 +9,7 @@ body:
       label: "מה הבעיה?"
       description: |
         <div dir="rtl">
-        "לדוגמה: כפתור השמירה לא עובד"
+        לדוגמה: כפתור השמירה לא עובד
         </div>
       value: |
         <div dir="auto">
@@ -24,7 +24,7 @@ body:
       label: "צילומי מסך"
       description: |
         <div dir="rtl">
-        "לא חובה - אפשר לצרף כדי להבין טוב יותר"
+        לא חובה - אפשר לצרף כדי להבין טוב יותר
         </div>
       value: |
         <div dir="auto">

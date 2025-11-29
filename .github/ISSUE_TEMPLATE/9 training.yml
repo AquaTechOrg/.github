@@ -9,7 +9,7 @@ body:
       label: "נושא ההדרכה"
       description: |
         <div dir="rtl">
-        "מהו הנושא המרכזי של ההדרכה?"
+        מהו הנושא המרכזי של ההדרכה?
         </div>
       value: |
         <div dir="auto">
