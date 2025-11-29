@@ -11,10 +11,8 @@ body:
         <div dir="rtl">
         מהי השאלה העיקרית שהספייק הזה בא לענות עליה?
         </div>
-
-      placeholder: "לדוגמה: האם כדאי להשתמש ב-GraphQL במקום REST API לפרויקט החדש שלנו?"
       value: |
-        <div dir="rtl">
+        <div dir="auto">
         
     
 
@@ -31,6 +29,11 @@ body:
         <div dir="rtl">
         מה התוצר הסופי של הספייק? מה יעזור לנו לקבל החלטה?
         </div>
-      placeholder: "לדוגמה: מסמך סיכום עם המלצה מנומקת, דוגמת קוד עובדת, דיאגרמת ארכיטקטורה."
+      value: |
+        <div dir="auto">
+
+
+        
+        </div>
     validations:
       required: false
