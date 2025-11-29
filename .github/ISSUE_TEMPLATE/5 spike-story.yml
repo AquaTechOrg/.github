@@ -7,7 +7,10 @@ body:
     id: spike_question
     attributes:
       label: "השאלה המרכזית"
-      description: "מהי השאלה העיקרית שהספייק הזה בא לענות עליה?"
+      description: |
+        <div dir="rtl">
+        "מהי השאלה העיקרית שהספייק הזה בא לענות עליה?"
+        </div>
       placeholder: "לדוגמה: מהי הדרך הטובה ביותר ליישם חיפוש בזמן אמת? האם כדאי להשתמש בספרייה X או Y?"
     validations:
       required: false
