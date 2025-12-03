@@ -14,9 +14,10 @@ body:
       value: |
 
 
-        ## For hebrew content use this template:
+        <!-- For hebrew content use this template:
         <div dir="rtl">
         
         
         </div>
+        -->
       required: false
