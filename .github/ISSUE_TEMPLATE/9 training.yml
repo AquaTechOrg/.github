@@ -12,9 +12,11 @@ body:
         מהו הנושא המרכזי של ההדרכה?
         </div>
       value: |
-        <div dir="auto">
 
 
+        ## For hebrew content use this template:
+        <div dir="rtl">
+        
         
         </div>
       required: false

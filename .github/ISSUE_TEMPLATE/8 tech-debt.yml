@@ -12,9 +12,12 @@ body:
         תאר את החוב הטכני, היכן הוא נמצא בקוד, ומדוע הוא נוצר.
         </div>
       value: |
-        <div dir="auto">
+
+
+        ## For hebrew content use this template:
+        <div dir="rtl">
         
-    
+        
         </div>
     validations:
       required: false
@@ -28,7 +31,10 @@ body:
         תאר את הדרך המומלצת לטפל בחוב הטכני.
         </div>
       value: |
-        <div dir="auto">
+
+
+        ## For hebrew content use this template:
+        <div dir="rtl">
         
         
         </div>

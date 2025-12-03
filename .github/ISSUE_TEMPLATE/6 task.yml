@@ -12,7 +12,10 @@ body:
         תאר בפירוט מה צריך לעשות, כולל רקע טכני אם נדרש.
         </div>
       value: |
-        <div dir="auto">
+
+
+        ## For hebrew content use this template:
+        <div dir="rtl">
         
         
         </div>

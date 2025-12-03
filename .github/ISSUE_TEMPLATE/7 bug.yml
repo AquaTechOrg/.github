@@ -12,7 +12,11 @@ body:
         לדוגמה: כפתור השמירה לא עובד
         </div>
       value: |
-        <div dir="auto">
+
+
+        ## For hebrew content use this template:
+        <div dir="rtl">
+        
         
         </div>
     validations:
@@ -27,7 +31,11 @@ body:
         לא חובה - אפשר לצרף כדי להבין טוב יותר
         </div>
       value: |
-        <div dir="auto">
+
+
+        ## For hebrew content use this template:
+        <div dir="rtl">
+        
         
         </div>
     validations:

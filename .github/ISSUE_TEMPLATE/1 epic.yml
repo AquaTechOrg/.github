@@ -12,7 +12,7 @@ body:
         תיאור מפורט של היעד והערך שהאפיק מביא
         </div>
       value: |
-        <div dir="auto">
+        <div dir="rtl">
         
         
         </div>
@@ -28,7 +28,7 @@ body:
         מה צריך להתקיים כדי לסמן את האפיק כהושלם
         </div>
       value: |
-        <div dir="auto">
+        <div dir="rtl">
 
 
         </div>
