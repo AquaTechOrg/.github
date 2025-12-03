@@ -12,8 +12,6 @@ body:
         תאר את החוב הטכני, היכן הוא נמצא בקוד, ומדוע הוא נוצר.
         </div>
       value: |
-
-
         <!-- For hebrew content use this template:
         <div dir="rtl">
         
@@ -32,8 +30,6 @@ body:
         תאר את הדרך המומלצת לטפל בחוב הטכני.
         </div>
       value: |
-
-
         <!-- For hebrew content use this template:
         <div dir="rtl">
         

@@ -12,8 +12,6 @@ body:
         לדוגמה: כפתור השמירה לא עובד
         </div>
       value: |
-
-
         <!-- For hebrew content use this template:
         <div dir="rtl">
         
@@ -32,8 +30,6 @@ body:
         לא חובה - אפשר לצרף כדי להבין טוב יותר
         </div>
       value: |
-
-
         <!-- For hebrew content use this template:
         <div dir="rtl">
         
