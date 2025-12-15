@@ -1,6 +1,6 @@
 name: "Spike Story💡"
 description: "טופס לחקר טכנולוגי, בדיקת היתכנות, או ניתוח פתרונות"
-type: "Spike Story💡"
+type: "Spike Story 💡"
 
 body:
   - type: textarea
