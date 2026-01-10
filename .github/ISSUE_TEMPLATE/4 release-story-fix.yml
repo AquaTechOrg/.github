@@ -25,27 +25,3 @@ body:
         </div>
     validations:
       required: false
-
-  - type: checkboxes
-    id: release_checklist
-    attributes:
-      label: "Checklist שחרור"
-      description: "מעקב אחר התקדמות ה-RC והשחרור הסופי"
-      options:
-        - label: "יצירת RC ראשון (Release Candidate)"
-        - label: "ביצוע בדיקות קבלה (Acceptance Tests)"
-        - label: "וידוא שכל הבאגים החוסמים (Blockers) תוקנו"
-        - label: "יצירת RC סופי (אם היו תיקונים)"
-        - label: "פריסה לייצור (Production Deploy)"
-        - label: "בדיקת שפיות (Sanity) בייצור"
-
-  - type: textarea
-    id: acceptance_findings
-    attributes:
-      label: "ממצאים ותיקונים (Linked Issues)"
-      description: |
-        <div dir="rtl">
-        כאן ניתן לרכז קישורים לבאגים שנפתחו במהלך הבדיקות (או להשתמש בפיצ'ר ה-Linked Issues של גיטהאב)
-        </div>
-    validations:
-      required: false
