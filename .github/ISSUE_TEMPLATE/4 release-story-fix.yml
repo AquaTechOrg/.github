@@ -14,10 +14,10 @@ body:
   - type: textarea
     id: version_goals
     attributes:
-      label: "מטרות הגרסה / הערות שחרור (Release Notes)"
+      label: "הערות שחרור"
       description: |
         <div dir="rtl">
-        מה כלול בגרסה זו? (בקצרה)
+        מה כולל השחרור של גירסה זו ?
         </div>
       value: |
         <div dir="rtl">
