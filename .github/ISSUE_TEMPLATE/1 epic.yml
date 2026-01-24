@@ -18,19 +18,3 @@ body:
         </div>
     validations:
       required: false
-
-  - type: textarea
-    id: acceptance_criteria
-    attributes:
-      label: "קריטריונים להשלמה"
-      description: |
-        <div dir="rtl">
-        מה צריך להתקיים כדי לסמן את האפיק כהושלם
-        </div>
-      value: |
-        <div dir="rtl">
-
-
-        </div>
-    validations:
-      required: false
