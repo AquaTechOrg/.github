@@ -20,21 +20,3 @@ body:
         -->
     validations:
       required: false
-
-  - type: textarea
-    id: screenshots
-    attributes:
-      label: "צילומי מסך"
-      description: |
-        <div dir="rtl">
-        לא חובה - אפשר לצרף כדי להבין טוב יותר
-        </div>
-      value: |
-        <!-- For hebrew content use this template:
-        <div dir="rtl">
-        
-        
-        </div>
-        -->
-    validations:
-      required: false

@@ -1,0 +1,22 @@
+name: "tech debt 🧹"
+description: "טופס לדיווח ותיעוד חובות טכנולוגיים"
+type: "Tech Debt 🧹"
+
+body:
+  - type: textarea
+    id: tech_debt_topic
+    attributes:
+      label: "נושא חוב טכנולוגי"
+      description: |
+        <div dir="rtl">
+        מהו הנושא המרכזי של חוב הטכנולוגי?
+        </div>
+      value: |
+        <!-- For hebrew content use this template:
+        <div dir="rtl">
+        
+        
+        </div>
+        -->
+    validations:
+      required: false

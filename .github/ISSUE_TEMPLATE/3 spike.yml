@@ -19,20 +19,3 @@ body:
         </div>
     validations:
       required: false
-
-
-  - type: textarea
-    id: outcome
-    attributes:
-      label: "תוצאה רצויה"
-      description: |
-        <div dir="rtl">
-        מה התוצר הסופי של הספייק? מה יעזור לנו לקבל החלטה?
-        </div>
-      value: |
-        <div dir="rtl">
-
-        
-        </div>
-    validations:
-      required: false
